@@ -23,6 +23,6 @@ pkgbase = repokase
 	optdepends = kwallet: alternative Secret Service provider
 	optdepends = xdg-utils: open GitHub pages in your browser
 	source = repokase-0.1.0.tar.gz::https://github.com/ninepointlabs/repokase/archive/refs/tags/v0.1.0.tar.gz
-	sha256sums = SKIP
+	sha256sums = 59b04e728f5ddbe70978533c458dc1a909e851656846f4d2f9282203e9121743
 
 pkgname = repokase

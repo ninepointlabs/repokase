@@ -23,7 +23,7 @@ optdepends=(
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
 checkdepends=('python-pytest' 'python-pytest-asyncio' 'python-respx')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')  # replace with the real checksum once v$pkgver is tagged (updpkgsums)
+sha256sums=('59b04e728f5ddbe70978533c458dc1a909e851656846f4d2f9282203e9121743')
 
 build() {
   cd "$pkgname-$pkgver"
