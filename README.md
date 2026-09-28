@@ -2,6 +2,8 @@
 
 **Your repos, chef's choice.**
 
+![Repokase: categories, the repository list with health badges, and the details pane](docs/screenshots/hero.png)
+
 Repokase is a native desktop app for managing your GitHub repositories, built for
 [Omarchy](https://omarchy.org). It shows every repository you own, collaborate on or
 see through an organization, with their stats, CI status and topics, and lets you act
@@ -46,6 +48,8 @@ store your sign-in: `gnome-keyring` (installed on Omarchy) or KWallet.
    code, and approve.
 4. Repokase stores the token in your keyring and loads your repositories. The next start
    opens straight to your repos.
+
+<p align="center"><img src="docs/screenshots/sign-in.png" width="560" alt="Sign-in screen showing a GitHub device code"></p>
 
 Repokase uses GitHub's
 [OAuth device flow](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow).
@@ -100,6 +104,8 @@ journalctl --user -u repokase-traffic.service         # what it recorded
 
 You can also run it by hand: `repokase --snapshot-traffic`.
 
+![Traffic history: 14-day totals, views and clones charts with a hover readout, top referrers, and workflow runs](docs/screenshots/details-traffic.png)
+
 ## GitHub Actions
 
 The details pane lists the latest workflow runs. If you can push to the repository:
@@ -110,6 +116,8 @@ The details pane lists the latest workflow runs. If you can push to the reposito
 - **Run workflow…** lists the workflows with a `workflow_dispatch` trigger, lets you
   pick a branch, and builds a form from the workflow's inputs (text, number, choice,
   boolean, environment). Required inputs are checked before anything is sent.
+
+![Run workflow dialog with version, channel and draft inputs](docs/screenshots/run-workflow.png)
 
 ## Health
 
@@ -137,6 +145,8 @@ and **Category…** (add or remove). Bulk archive confirms first, lists every re
 it will touch, skips the ones you can't change, and reports failures by name. Esc
 clears the marks.
 
+![Four repositories marked, with the bulk action bar above the list](docs/screenshots/bulk.png)
+
 ## Using it
 
 Press **F1** (or `?`) in the app for the full list of shortcuts.
@@ -159,6 +169,8 @@ The layout adapts to the window width. At half-screen tile widths it shows the l
 opens details full-width. From 900px it shows the list and details side by side, and
 from 1180px it adds the categories sidebar.
 
+<p align="center"><img src="docs/screenshots/narrow.png" width="420" alt="Details opened full-width in a narrow, half-screen window"></p>
+
 ## Theming
 
 Repokase reads the active Omarchy theme from `~/.local/state/omarchy/current/theme/`:
@@ -172,6 +184,17 @@ Repokase reads the active Omarchy theme from `~/.local/state/omarchy/current/the
 
 Repokase watches those files. When you switch theme or font it repaints immediately,
 with no restart. Without an Omarchy theme it uses a built-in Tokyo Night palette.
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/theme-tokyo-night.png" alt="Repokase in the Tokyo Night theme"></td>
+    <td><img src="docs/screenshots/theme-latte.png" alt="Repokase in the Catppuccin Latte light theme"></td>
+  </tr>
+  <tr>
+    <td align="center">Tokyo Night</td>
+    <td align="center">Catppuccin Latte</td>
+  </tr>
+</table>
 
 ### Hyprland
 
@@ -211,6 +234,9 @@ QT_QPA_PLATFORM=offscreen .venv/bin/pytest
   controllers); all UI is QML under `src/repokase/qml/`. Every UI component is a custom
   `Rk*` component that takes its colors, font and spacing from the `Theme` singleton;
   no stock Qt Quick Controls style is used.
+- `tools/screenshots.py` regenerates the images in `docs/screenshots/` from invented
+  demo data. It runs offline in offscreen Qt and never touches your keyring, cache or
+  GitHub account.
 - Useful environment variables:
   - `REPOKASE_THEME_DIR` points at any theme directory, for testing other themes.
   - `GITHUB_CLIENT_ID` uses your own GitHub OAuth App. It must have **Device Flow**
