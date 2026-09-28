@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Repokase
+GenericName=GitHub Repository Manager
+Comment=Your repos, chef's choice.
+Exec=repokase
+Icon=repokase
+Terminal=false
+Categories=Development;RevisionControl;
+Keywords=github;git;repository;repo;actions;
+StartupWMClass=repokase
+StartupNotify=true

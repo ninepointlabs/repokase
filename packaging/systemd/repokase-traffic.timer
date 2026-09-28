@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily GitHub traffic snapshot for Repokase
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+# Catch up after the machine was off or asleep at the scheduled time.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

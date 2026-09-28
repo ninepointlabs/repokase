@@ -1,0 +1,5 @@
+APP_NAME = "Repokase"
+APP_ID = "repokase"
+TAGLINE = "Your repos, chef's choice."
+__version__ = "0.1.0"
+HOMEPAGE = "https://github.com/ninepointlabs/repokase"

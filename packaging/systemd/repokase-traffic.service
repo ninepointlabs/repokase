@@ -1,0 +1,11 @@
+[Unit]
+Description=Repokase: record GitHub traffic (GitHub keeps only 14 days)
+Documentation=https://github.com/ninepointlabs/repokase#traffic-history
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/repokase --snapshot-traffic --if-due
+# The token lives in the Secret Service keyring of your session.
+Nice=10
