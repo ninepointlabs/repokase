@@ -22,11 +22,17 @@ follows your Omarchy theme and font live.
 
 ## Install
 
-### From the AUR
+### From a release
+
+Each [GitHub release](https://github.com/ninepointlabs/repokase/releases) includes a
+ready-built Arch package:
 
 ```sh
-yay -S repokase        # or: paru -S repokase
+sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.1.0/repokase-0.1.0-1-any.pkg.tar.zst
 ```
+
+pacman installs the dependencies from the official repos. To update, install the next
+release the same way. An AUR package (`yay -S repokase`) is coming.
 
 ### From source
 
@@ -35,6 +41,9 @@ git clone https://github.com/ninepointlabs/repokase
 cd repokase/packaging
 makepkg -si
 ```
+
+`makepkg -si` downloads the tagged release named in the PKGBUILD, checks its checksum,
+runs the test suite, and installs the package.
 
 Runtime dependencies (all in the official repos): `pyside6`, `python-httpx`,
 `python-qasync`, `python-secretstorage`, `python-yaml`. You also need a **Secret Service** provider to
