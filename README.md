@@ -28,7 +28,7 @@ Each [GitHub release](https://github.com/ninepointlabs/repokase/releases) includ
 ready-built Arch package:
 
 ```sh
-sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.1.0/repokase-0.1.0-1-any.pkg.tar.zst
+sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.1.0/repokase-0.1.0-2-any.pkg.tar.zst
 ```
 
 pacman installs the dependencies from the official repos. To update, install the next
@@ -46,7 +46,7 @@ makepkg -si
 runs the test suite, and installs the package.
 
 Runtime dependencies (all in the official repos): `pyside6`, `python-httpx`,
-`python-qasync`, `python-secretstorage`, `python-yaml`. You also need a **Secret Service** provider to
+`python-qasync`, `python-secretstorage`, `python-yaml`, `python-typing_extensions`. You also need a **Secret Service** provider to
 store your sign-in: `gnome-keyring` (installed on Omarchy) or KWallet.
 
 ## First sign-in

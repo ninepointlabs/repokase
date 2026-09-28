@@ -1,7 +1,7 @@
 # Maintainer: Nine Point Labs <tim@ninepointlabs.com>
 pkgname=repokase
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Your repos, chef's choice. A native Omarchy app for managing GitHub repositories"
 arch=('any')
 url="https://github.com/ninepointlabs/repokase"
@@ -13,6 +13,9 @@ depends=(
   'python-qasync'
   'python-secretstorage'
   'python-yaml'
+  # anyio (used by httpx for async requests) imports typing_extensions on
+  # Python < 3.15, but Arch's python-anyio does not declare it.
+  'python-typing_extensions'
   'hicolor-icon-theme'
 )
 optdepends=(

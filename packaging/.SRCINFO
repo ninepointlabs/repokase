@@ -1,7 +1,7 @@
 pkgbase = repokase
 	pkgdesc = Your repos, chef's choice. A native Omarchy app for managing GitHub repositories
 	pkgver = 0.1.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/ninepointlabs/repokase
 	arch = any
 	license = MIT
@@ -18,6 +18,7 @@ pkgbase = repokase
 	depends = python-qasync
 	depends = python-secretstorage
 	depends = python-yaml
+	depends = python-typing_extensions
 	depends = hicolor-icon-theme
 	optdepends = gnome-keyring: Secret Service provider to store the GitHub token
 	optdepends = kwallet: alternative Secret Service provider
