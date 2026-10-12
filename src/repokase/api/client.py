@@ -13,6 +13,7 @@ import httpx
 from .. import __version__
 from .errors import (
     ApiError,
+    AppRestricted,
     AuthExpired,
     GraphQLError,
     NetworkError,
@@ -26,6 +27,8 @@ API_URL = "https://api.github.com"
 API_VERSION = "2022-11-28"
 
 _SSO_URL = re.compile(r"url=(\S+)")
+# "...the `PlebOne` organization has enabled OAuth App access restrictions..."
+_APP_RESTRICTED = re.compile(r"the `([^`]+)` organization has enabled OAuth App access restrictions")
 
 
 @dataclass
@@ -109,6 +112,9 @@ class GitHubClient:
         if status == 403 and sso:
             match = _SSO_URL.search(sso)
             raise SsoRequired(match.group(1) if match else None)
+        if status == 403 and "OAuth App access restrictions" in message:
+            match = _APP_RESTRICTED.search(message)
+            raise AppRestricted(match.group(1) if match else None)
         if status in (403, 429) and (h.get("x-ratelimit-remaining") == "0" or "retry-after" in h):
             if "retry-after" in h:
                 reset = time.time() + float(h["retry-after"])

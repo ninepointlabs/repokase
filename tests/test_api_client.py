@@ -13,6 +13,7 @@ from repokase.api.errors import (
     RateLimited,
     ScopeMissing,
     SsoRequired,
+    AppRestricted,
 )
 
 
@@ -67,6 +68,20 @@ async def test_sso_header_is_surfaced_with_url(api):
     with pytest.raises(SsoRequired) as exc:
         await api.rest("GET", "/orgs/acme/repos")
     assert exc.value.url == "https://github.com/orgs/acme/sso?authorization_request=abc"
+
+
+RESTRICTED = ("Although you appear to have the correct authorization credentials, the `PlebOne` organization "
+              "has enabled OAuth App access restrictions, meaning that data access to third-parties is limited.")
+
+
+@respx.mock
+async def test_oauth_app_restriction_names_the_org(api):
+    respx.get(f"{API_URL}/user/memberships/orgs/PlebOne").respond(403, json={"message": RESTRICTED})
+    with pytest.raises(AppRestricted) as exc:
+        await api.rest("GET", "/user/memberships/orgs/PlebOne")
+    assert exc.value.org == "PlebOne"
+    assert exc.value.url.startswith("https://github.com/settings/connections/applications/")
+    assert "PlebOne organization restricts third-party apps" in str(exc.value)
 
 
 @respx.mock

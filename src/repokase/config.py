@@ -21,6 +21,11 @@ def github_client_id() -> str:
     return os.environ.get("GITHUB_CLIENT_ID") or DEFAULT_GITHUB_CLIENT_ID
 
 
+def app_access_url() -> str:
+    """Where the user grants (or requests) Repokase access to their organizations."""
+    return f"https://github.com/settings/connections/applications/{github_client_id()}"
+
+
 def _xdg(var: str, default: str) -> Path:
     value = os.environ.get(var)
     return Path(value) if value else Path.home() / default

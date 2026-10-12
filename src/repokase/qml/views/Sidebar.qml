@@ -286,6 +286,15 @@ Rectangle {
             RkButton { text: "People"; variant: "ghost"; onClicked: Repos.openUrl(root.orgUrl(orgLinks.login, "people")) }
             RkButton { text: "Settings"; variant: "ghost"; onClicked: Repos.openUrl(root.orgUrl(orgLinks.login, "settings")) }
         }
+        // Organizations that restrict third-party apps are invisible until approved.
+        RkButton {
+            Layout.leftMargin: Theme.rowPaddingX - Theme.spaceSm
+            Layout.topMargin: Theme.spaceSm
+            variant: "ghost"
+            text: "Missing an organization?"
+            onClicked: Repos.openUrl(Auth.appAccessUrl)
+            Accessible.description: "Opens GitHub's page for granting Repokase access to your organizations"
+        }
         RkText {
             Layout.fillWidth: true
             Layout.margins: Theme.rowPaddingX

@@ -94,6 +94,12 @@ Where your data goes:
 - **Organizations with OAuth app access restrictions** only show their repositories
   after an organization owner approves Repokase
   ([GitHub docs](https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions)).
+  Until then GitHub hides the organization from Repokase completely, without an error.
+  Click **Missing an organization?** in the sidebar (or open
+  [Repokase's authorized-app page](https://github.com/settings/connections/applications/Ov23liXiZkM9OOZhZdBY)):
+  owners click **Grant** next to the organization, members click **Request**. Then refresh.
+  If an organization Repokase has shown before starts blocking it, a banner names it, and
+  actions that hit the restriction say so with a **Fix on GitHub…** button.
 - **Organizations that enforce SAML SSO** need you to authorize the token for that
   organization. Repokase shows a warning after refreshing, and an **Authorize SSO**
   button when an action needs it.

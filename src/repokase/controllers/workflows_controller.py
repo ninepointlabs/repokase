@@ -8,7 +8,7 @@ import logging
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from ..api import workflows as api
-from ..api.errors import ApiError, AuthExpired, SsoRequired
+from ..api.errors import ApiError, AuthExpired, OrgBlocked
 from .auth_controller import AuthController
 from .detail_controller import DetailController, explain
 from .repo_controller import RepoController
@@ -60,7 +60,7 @@ class WorkflowsController(QObject):
         except AuthExpired:
             self._set(busy="", loading=False)
             await self._auth.expire_session()
-        except SsoRequired as exc:
+        except OrgBlocked as exc:
             self._set(busy="", loading=False, error=explain(exc, action, "write"), error_url=exc.url or "")
         except ValueError as exc:
             self._set(busy="", loading=False, error=str(exc))

@@ -257,7 +257,7 @@ FocusScope {
             visible: Actions.error.length > 0
             spacing: Theme.spaceMd
             RkNotice { Layout.fillWidth: true; kind: "danger"; text: Actions.error }
-            RkButton { visible: Actions.errorUrl.length > 0; text: "Authorize SSO"; variant: "primary"; onClicked: Repos.openUrl(Actions.errorUrl) }
+            RkButton { visible: Actions.errorUrl.length > 0; text: "Fix on GitHub…"; variant: "primary"; onClicked: Repos.openUrl(Actions.errorUrl) }
             RkButton { text: "Dismiss"; variant: "ghost"; onClicked: Actions.clearError() }
         }
         // Sign-ins from before 0.2.1 lack read:org, so organization repos are missing.
@@ -276,6 +276,23 @@ FocusScope {
             }
             RkButton { text: "Allow…"; variant: "primary"; onClicked: root.actions.allowOrganizations() }
             RkButton { text: "Not now"; variant: "ghost"; onClicked: parent.dismissed = true }
+        }
+        // Organizations with OAuth app access restrictions hide their repos silently.
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.spaceLg
+            Layout.rightMargin: Theme.spaceLg
+            Layout.topMargin: Theme.spaceSm
+            visible: Repos.restrictedOrgs.length > 0
+            spacing: Theme.spaceMd
+            RkNotice {
+                Layout.fillWidth: true
+                kind: "warning"
+                text: Repos.restrictedOrgs.join(", ")
+                    + (Repos.restrictedOrgs.length === 1 ? " restricts" : " restrict")
+                    + " third-party apps, so their repositories are hidden. Grant Repokase access on GitHub, then refresh."
+            }
+            RkButton { text: "Grant access…"; variant: "primary"; onClicked: Repos.openUrl(Auth.appAccessUrl) }
         }
         Repeater {
             model: Repos.warnings

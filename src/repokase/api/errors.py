@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .. import config
+
 
 class ApiError(Exception):
     def __init__(self, message: str, status: int | None = None):
@@ -26,12 +28,32 @@ class ScopeMissing(ApiError):
         super().__init__(f"This needs extra GitHub permission: {', '.join(sorted(needed))}.", 403)
 
 
-class SsoRequired(ApiError):
-    def __init__(self, url: str | None, org: str | None = None):
+class OrgBlocked(ApiError):
+    """An organization policy, not the user's role, refused the request.
+
+    `url` is the GitHub page that fixes it, so the UI can offer one button.
+    """
+
+    def __init__(self, message: str, url: str | None, org: str | None = None):
         self.url = url
         self.org = org
+        super().__init__(message, 403)
+
+
+class SsoRequired(OrgBlocked):
+    def __init__(self, url: str | None, org: str | None = None):
         who = f"the {org} organization" if org else "this organization"
-        super().__init__(f"{who.capitalize()} requires SAML single sign-on for this token.", 403)
+        super().__init__(f"{who.capitalize()} requires SAML single sign-on for this token.", url, org)
+
+
+class AppRestricted(OrgBlocked):
+    """The organization has OAuth app access restrictions and hasn't approved Repokase."""
+
+    def __init__(self, org: str | None):
+        who = f"The {org} organization" if org else "This organization"
+        super().__init__(
+            f"{who} restricts third-party apps and hasn't approved Repokase.", config.app_access_url(), org
+        )
 
 
 class RateLimited(ApiError):

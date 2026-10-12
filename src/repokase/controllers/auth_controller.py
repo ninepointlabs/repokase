@@ -365,6 +365,7 @@ class AuthController(QObject):
         notify=changed,
     )
     needsOrgScope = Property(bool, _needs_org_scope, notify=changed)
+    appAccessUrl = Property(str, lambda self: config.app_access_url(), constant=True)
     rateRemaining = Property(int, lambda self: self._rate.remaining if self._rate and self._rate.remaining is not None else -1, notify=changed)
     rateLimit = Property(int, lambda self: self._rate.limit if self._rate and self._rate.limit else -1, notify=changed)
     rateResetAt = Property(float, lambda self: (self._rate.reset_at or 0) * 1000 if self._rate else 0, notify=changed)

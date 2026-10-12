@@ -137,6 +137,19 @@ async def test_sso_error_exposes_authorize_link(env):
     assert actions.property("error") == "" and actions.property("errorUrl") == ""
 
 
+@respx.mock
+async def test_org_app_restriction_explains_and_links_to_grant(env):
+    _, _, actions, _, _, _ = env
+    respx.patch(REPO_URL).respond(403, json={"message": "Although you appear to have the correct authorization "
+        "credentials, the `octo` organization has enabled OAuth App access restrictions, meaning that data access "
+        "to third-parties is limited."})
+    actions.setDescription("A", "hi")
+    await actions.settle()
+    assert "octo organization restricts third-party apps" in actions.property("error")
+    assert "admin" not in actions.property("error")
+    assert actions.property("errorUrl").startswith("https://github.com/settings/connections/applications/")
+
+
 def test_capabilities(env):
     _, _, actions, _, _, _ = env
     a = actions.capabilities("A")
@@ -292,6 +305,35 @@ def test_organizations_list_org_owners_with_counts(env, qapp):
     assert repos.property("organizations") == [{"login": "acme", "count": 2}, {"login": "Zeta-Labs", "count": 1}]
     auth.signedOut.emit()
     assert repos.property("organizations") == [] and repos.property("owners") == []
+
+
+RESTRICTED_MSG = ("Although you appear to have the correct authorization credentials, the `{}` organization has "
+                  "enabled OAuth App access restrictions, meaning that data access to third-parties is limited.")
+
+
+@respx.mock
+async def test_missing_known_orgs_are_checked_by_name(env):
+    _, repos, _, conn, _, _ = env
+    store.set_setting(conn, "orgs.known:42", ["PlebOne", "OldJob", "EmptyOrg"])
+    memberships = f"{API_URL}/user/memberships/orgs"
+    respx.get(f"{memberships}/PlebOne").respond(403, json={"message": RESTRICTED_MSG.format("PlebOne")})
+    respx.get(f"{memberships}/OldJob").respond(404, json={"message": "Not Found"})
+    respx.get(f"{memberships}/EmptyOrg").respond(200, json={"state": "active", "role": "member"})
+    seen = [repo("B", "beta", owner="acme", full_name="acme/beta", owner_is_org=True)]
+    assert await repos._check_orgs(42, seen) == ["PlebOne"]
+    # Still-blocked orgs stay known; left or empty ones are forgotten; visible ones are learned.
+    assert store.get_setting(conn, "orgs.known:42") == ["acme", "PlebOne"]
+    assert not respx.calls or all("/acme" not in str(c.request.url) for c in respx.calls)
+
+
+async def test_org_checks_tolerate_errors_and_start_empty(env):
+    _, repos, _, conn, _, _ = env
+    assert await repos._check_orgs(42, [repo("A", "alpha")]) == []  # nothing known, no requests
+    store.set_setting(conn, "orgs.known:42", ["Flaky"])
+    with respx.mock(assert_all_called=False) as mock:
+        mock.get(f"{API_URL}/user/memberships/orgs/Flaky").mock(side_effect=httpx.ConnectError("down"))
+        assert await repos._check_orgs(42, []) == []
+    assert store.get_setting(conn, "orgs.known:42") == ["Flaky"]  # unknown outcome: keep checking
 
 
 # ----------------------------------------------------------- re-authorize

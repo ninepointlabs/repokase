@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from .client import GitHubClient
-from .errors import ApiError, GraphQLError
+from .errors import ApiError, AppRestricted, GraphQLError, NotFound
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +101,21 @@ def _warning(err: dict) -> str:
     if "SAML" in msg or "SSO" in msg:
         return msg or "An organization requires SSO authorization for this token."
     return msg or err.get("type", "Unknown GraphQL error")
+
+
+async def org_access(client: GitHubClient, org: str) -> str:
+    """"ok", "restricted" (the org blocks Repokase) or "gone" (no longer a member).
+
+    Restricted organizations are left out of every listing without an error,
+    so the only way to notice one is to ask about it by name.
+    """
+    try:
+        await client.rest("GET", f"/user/memberships/orgs/{quote(org, safe='')}")
+    except AppRestricted:
+        return "restricted"
+    except NotFound:
+        return "gone"
+    return "ok"
 
 
 async def fetch_viewer(client: GitHubClient) -> dict:

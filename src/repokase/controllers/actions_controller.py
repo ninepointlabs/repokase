@@ -14,7 +14,7 @@ import logging
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from ..api import actions as api
-from ..api.errors import ApiError, AuthExpired, GraphQLError, ScopeMissing, SsoRequired
+from ..api.errors import ApiError, AuthExpired, GraphQLError, OrgBlocked, ScopeMissing
 from ..cache import store
 from .auth_controller import AuthController
 from .detail_controller import explain
@@ -71,7 +71,7 @@ class ActionsController(QObject):
         except ScopeMissing as exc:
             self._set(busy="", error=explain(exc, action))
             return
-        except SsoRequired as exc:
+        except OrgBlocked as exc:
             self._set(busy="", error=explain(exc, action), error_url=exc.url or "")
             return
         except (ApiError, GraphQLError, ValueError) as exc:

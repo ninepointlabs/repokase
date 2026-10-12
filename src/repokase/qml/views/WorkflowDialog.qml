@@ -132,7 +132,7 @@ RkDialog {
         Layout.fillWidth: true
         visible: Workflows.error.length > 0
         RkNotice { Layout.fillWidth: true; kind: "danger"; text: Workflows.error }
-        RkButton { visible: Workflows.errorUrl.length > 0; text: "Authorize SSO"; onClicked: Repos.openUrl(Workflows.errorUrl) }
+        RkButton { visible: Workflows.errorUrl.length > 0; text: "Fix on GitHub…"; onClicked: Repos.openUrl(Workflows.errorUrl) }
     }
 
     buttons: [

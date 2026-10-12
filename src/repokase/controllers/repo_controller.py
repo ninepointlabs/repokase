@@ -29,6 +29,11 @@ AUTO_REFRESH_MS = 15 * 60 * 1000
 # Opening the app within this window of the last sync skips the startup fetch.
 FRESH_ENOUGH_S = 60
 UI_STATE_KEY = "ui.repoList"
+# Organizations seen in earlier refreshes, per account. An org that blocks
+# third-party apps vanishes from every listing without an error, so ones that
+# go missing are asked about by name (at most MAX_ORG_CHECKS per refresh).
+KNOWN_ORGS_KEY = "orgs.known:{}"
+MAX_ORG_CHECKS = 10
 
 
 def _parse_ts(value: str | None) -> float:
@@ -79,6 +84,7 @@ class RepoController(QObject):
         self._marked: set[str] = set()
         self._owners: list[str] = []
         self._organizations: list[dict] = []
+        self._restricted_orgs: list[str] = []
         self._task: asyncio.Task | None = None
         self._restoring_ui = False
 
@@ -120,7 +126,7 @@ class RepoController(QObject):
         self.marksChanged.emit()
         self._categories = []
         self.categoriesChanged.emit()
-        self._set(refreshing=False, progress="", error="", warnings=[], last_synced=0.0)
+        self._set(refreshing=False, progress="", error="", warnings=[], restricted_orgs=[], last_synced=0.0)
 
     def _load_cache(self, account_id: int) -> None:
         repos = store.load_repos(self._conn, account_id)
@@ -206,7 +212,30 @@ class RepoController(QObject):
         self._load_cache(account_id)
         warnings = list(result.warnings)
         warnings += await self._check_health(account_id, result.repos)
-        self._set(refreshing=False, progress="", warnings=sorted(set(warnings)))
+        restricted = await self._check_orgs(account_id, result.repos)
+        if self._auth.account_id != account_id:
+            return
+        self._set(refreshing=False, progress="", warnings=sorted(set(warnings)), restricted_orgs=restricted)
+
+    async def _check_orgs(self, account_id: int, repos: list[dict]) -> list[str]:
+        """Known organizations missing from this refresh that now block Repokase."""
+        key = KNOWN_ORGS_KEY.format(account_id)
+        seen = {r["owner"] for r in repos if r.get("owner_is_org")}
+        known = set(store.get_setting(self._conn, key, []))
+        restricted: list[str] = []
+        for org in sorted(known - seen, key=str.lower)[:MAX_ORG_CHECKS]:
+            try:
+                state = await repos_api.org_access(self._auth.api, org)
+            except (ApiError, NetworkError) as exc:
+                log.info("Could not check organization %s: %s", org, exc)
+                continue
+            if state == "restricted":
+                restricted.append(org)
+            else:
+                # Left the org, or it simply has no repos you can see: nothing hidden.
+                known.discard(org)
+        store.set_setting(self._conn, key, sorted(known | seen, key=str.lower))
+        return restricted
 
     async def _check_health(self, account_id: int, repos: list[dict]) -> list[str]:
         """Score every repo; failures here never fail the refresh."""
@@ -378,6 +407,7 @@ class RepoController(QObject):
     languages = Property("QVariantList", lambda self: self._languages, notify=changed)
     owners = Property("QVariantList", lambda self: self._owners, notify=changed)
     organizations = Property("QVariantList", lambda self: self._organizations, notify=changed)
+    restrictedOrgs = Property("QVariantList", lambda self: self._restricted_orgs, notify=changed)
     categories = Property("QVariantList", lambda self: self._categories, notify=categoriesChanged)
     markedCount = Property(int, lambda self: len(self._marked), notify=marksChanged)
     markedIds = Property("QVariantList", lambda self: self.marked_ids(), notify=marksChanged)

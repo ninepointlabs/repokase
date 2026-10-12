@@ -10,7 +10,16 @@ from datetime import datetime
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from ..api import rest
-from ..api.errors import ApiError, AuthExpired, NetworkError, NotFound, RateLimited, ScopeMissing, SsoRequired
+from ..api.errors import (
+    ApiError,
+    AppRestricted,
+    AuthExpired,
+    NetworkError,
+    NotFound,
+    RateLimited,
+    ScopeMissing,
+    SsoRequired,
+)
 from ..cache import store
 from .auth_controller import AuthController
 from .repo_controller import RepoController
@@ -35,6 +44,9 @@ def _age_s(iso: str | None) -> float:
 def explain(exc: Exception, action: str, access: str = "admin or maintain") -> str:
     if isinstance(exc, NetworkError):
         return f"Offline: could not {action}."
+    if isinstance(exc, AppRestricted):
+        who = f"The {exc.org} organization" if exc.org else "This organization"
+        return f"{who} restricts third-party apps and hasn't approved Repokase, so GitHub refused to {action}. Grant access, then try again."
     if isinstance(exc, SsoRequired):
         return f"This organization requires SSO for Repokase. Authorize it on GitHub, then try again."
     if isinstance(exc, ScopeMissing):
