@@ -5,7 +5,7 @@ import Repokase
 import "../components"
 
 // Dialogs for repository actions. Entry points take a repo node id:
-//   editDescription(id)  toggleArchive(id)  changeVisibility(id)  remove(id)
+//   editDescription(id)  toggleArchive(id)  changeVisibility(id)  transfer(id)  remove(id)
 // `flash(text)` is called for "can't do that" messages.
 Item {
     id: root
@@ -51,6 +51,18 @@ Item {
         bulkDialog.ids = ids
         bulkDialog.archive = archived
         bulkDialog.show(focusBack)
+    }
+    function transfer(id) {
+        const c = caps(id)
+        if (!c.transfer) { flash(c.transferWhy); return }
+        const r = repoOf(id)
+        transferDialog.nodeId = id
+        transferDialog.fullName = r.full_name
+        transferDialog.targets = Actions.transferTargets(id)
+        ownerField.text = ""
+        transferField.text = ""
+        transferDialog.show(focusBack)
+        ownerField.forceActiveFocus(Qt.TabFocusReason)
     }
     function remove(id) {
         const c = caps(id)
@@ -183,6 +195,71 @@ Item {
                 text: (bulkDialog.archive ? "Archive " : "Unarchive ") + bulkDialog.ids.length
                 variant: bulkDialog.archive ? "danger" : "primary"
                 onClicked: { Actions.bulkArchive(bulkDialog.ids, bulkDialog.archive); bulkDialog.close() }
+            }
+        ]
+    }
+
+    // ------------------------------------------------------------- transfer
+    RkDialog {
+        id: transferDialog
+        property string nodeId: ""
+        property string fullName: ""
+        property var targets: []
+        readonly property string owner: ownerField.text.trim()
+        readonly property bool ready: owner.length > 0 && transferField.text.trim() === fullName
+        title: "Transfer " + fullName
+        message: "Moves the repository, with its issues, pull requests, wiki, stars and watchers, to another "
+            + "organization or account. GitHub redirects the old URL, but update local remotes. "
+            + "An organization needs to let you create repositories there; a person has to accept "
+            + "the transfer from an email before anything moves."
+        function submit() {
+            if (!ready) return
+            Actions.transferRepo(nodeId, owner, transferField.text)
+            close()
+        }
+
+        RkText { text: "New owner:" }
+        RkTextField {
+            id: ownerField
+            Layout.fillWidth: true
+            placeholderText: "organization or username"
+            onAccepted: transferField.forceActiveFocus(Qt.TabFocusReason)
+            Accessible.name: "New owner of the repository"
+        }
+        Flow {
+            Layout.fillWidth: true
+            visible: transferDialog.targets.length > 0
+            spacing: Theme.spaceSm
+            Repeater {
+                model: transferDialog.targets
+                RkChip {
+                    required property string modelData
+                    text: modelData
+                    checked: transferDialog.owner === modelData
+                    onClicked: ownerField.text = modelData
+                }
+            }
+        }
+        RkText {
+            Layout.fillWidth: true
+            text: "Type " + transferDialog.fullName + " to confirm:"
+            wrapMode: Text.WrapAnywhere
+            elide: Text.ElideNone
+        }
+        RkTextField {
+            id: transferField
+            Layout.fillWidth: true
+            placeholderText: transferDialog.fullName
+            onAccepted: transferDialog.submit()
+            Accessible.name: "Type the repository name to confirm the transfer"
+        }
+        buttons: [
+            RkButton { text: "Cancel"; variant: "ghost"; hint: "Esc"; onClicked: transferDialog.close() },
+            RkButton {
+                text: transferDialog.owner ? "Transfer to " + transferDialog.owner : "Transfer"
+                variant: "danger"
+                enabled: transferDialog.ready
+                onClicked: transferDialog.submit()
             }
         ]
     }

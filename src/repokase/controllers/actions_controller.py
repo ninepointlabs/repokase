@@ -116,6 +116,8 @@ class ActionsController(QObject):
             "descriptionWhy": "Needs admin or maintain access." if not maintain
             else "Archived repositories are read-only. Unarchive first." if archived
             else "",
+            "transfer": admin,
+            "transferWhy": "" if admin else need_admin,
             "delete": admin,
             "deleteWhy": "" if admin else need_admin,
             "hasDeleteScope": self._auth.hasScope(DELETE_SCOPE),
@@ -169,6 +171,41 @@ class ActionsController(QObject):
         self._start(
             "Saving description…",
             self._run("update the description", node_id, lambda: api.set_description(self._auth.api, repo["full_name"], description), success),
+        )
+
+    @Slot(str, result="QVariantList")
+    def transferTargets(self, node_id: str) -> list:
+        """Owners Repokase has seen (you, your orgs with repos), minus the current one."""
+        repo = self._repo(node_id) or {}
+        return [o for o in self._repos.property("owners") if o != repo.get("owner")]
+
+    @Slot(str, str, str)
+    def transferRepo(self, node_id: str, new_owner: str, typed_name: str) -> None:
+        repo = self._repo(node_id)
+        if not repo:
+            return
+        # The UI enforces this too, as for deletes.
+        if typed_name.strip() != repo["full_name"]:
+            self._set(error="The name you typed does not match. Nothing was transferred.")
+            return
+        old_name = repo["full_name"]
+        target = new_owner.strip()
+
+        def success(fields):
+            if fields["owner"].lower() != target.lower():
+                # A user target has to accept first; until then nothing moves.
+                return f"Transfer of {old_name} requested; {target} must accept it from the email GitHub sends"
+            account_id = self._auth.account_id
+            if account_id is not None:
+                store.move_repo(self._repos.conn, account_id, node_id, fields)
+            self._repos.source.update_repo(node_id, **fields)
+            self._repos.refresh_owners()
+            self._repos.repoUpdated.emit(node_id)
+            return f"Transferred {old_name} to {fields['full_name']}"
+
+        self._start(
+            "Transferring…",
+            self._run("transfer the repository", node_id, lambda: api.transfer_repo(self._auth.api, old_name, target), success),
         )
 
     @Slot(str, str)

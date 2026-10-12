@@ -27,6 +27,7 @@ RkDialog {
         ["1 … 9", "Toggle category"],
         ["e", "Edit description"],
         ["Shift+A / Shift+V", "Archive / visibility"],
+        ["Shift+T", "Transfer to another owner"],
         ["Delete", "Delete (type name to confirm)"],
         ["x  Space", "Mark for bulk actions"],
         ["Shift+↓ ↑  Ctrl+A", "Extend marks / mark all"],

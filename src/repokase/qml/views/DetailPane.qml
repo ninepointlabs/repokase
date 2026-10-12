@@ -207,7 +207,7 @@ Rectangle {
             }
 
             // -------------------------------------------------- manage
-            Section { title: "Manage"; hint: "e · Shift+A · Shift+V · Del" }
+            Section { title: "Manage"; hint: "e · Shift+A · Shift+V · Shift+T · Del" }
             Flow {
                 id: manage
                 Layout.fillWidth: true
@@ -230,6 +230,11 @@ Rectangle {
                     text: root.repo.is_archived ? "Unarchive" : "Archive"
                     enabled: !!manage.caps.archive && !Actions.busy
                     onClicked: root.actions.toggleArchive(Detail.nodeId)
+                }
+                RkButton {
+                    text: "Transfer…"
+                    enabled: !!manage.caps.transfer && !Actions.busy
+                    onClicked: root.actions.transfer(Detail.nodeId)
                 }
                 RkButton {
                     text: "Delete…"

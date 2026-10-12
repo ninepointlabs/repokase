@@ -197,6 +197,86 @@ async def test_delete_scope_rejected_by_github(env):
     assert repos.source.get_repo("A") is not None
 
 
+# ----------------------------------------------------------------- transfer
+TRANSFER_URL = f"{REPO_URL}/transfer"
+
+
+def transferred(owner, name="alpha"):
+    return {"name": name, "full_name": f"{owner}/{name}", "owner": {"login": owner},
+            "html_url": f"https://github.com/{owner}/{name}"}
+
+
+@respx.mock
+async def test_transfer_to_org_moves_repo_and_keeps_local_data(env):
+    _, repos, actions, conn, _, events = env
+    cat = store.create_category(conn, "Work")
+    store.set_repo_category(conn, 42, "A", cat, True)
+    store.save_traffic(conn, "octo/alpha", "views", [{"day": "2026-10-01", "count": 5, "uniques": 2}])
+    route = respx.post(TRANSFER_URL).respond(202, json=transferred("acme"))
+    actions.transferRepo("A", " acme ", "octo/alpha")
+    await actions.settle()
+    assert json.loads(route.calls.last.request.content) == {"new_owner": "acme"}
+    moved = repos.source.get_repo("A")
+    assert (moved["owner"], moved["full_name"], moved["url"]) == ("acme", "acme/alpha", "https://github.com/acme/alpha")
+    cached = {r["node_id"]: r for r in store.load_repos(conn, 42)}["A"]
+    assert cached["full_name"] == "acme/alpha" and cached["owner"] == "acme"
+    assert store.load_traffic(conn, "acme/alpha", "views")[0]["count"] == 5
+    assert store.load_traffic(conn, "octo/alpha", "views") == []
+    assert conn.execute("SELECT COUNT(*) FROM repo_category WHERE repo_id='A'").fetchone()[0] == 1
+    assert "acme" in repos.property("owners")
+    assert events["done"] == ["Transferred octo/alpha to acme/alpha"]
+
+
+@respx.mock
+async def test_transfer_to_user_waits_for_acceptance(env):
+    _, repos, actions, conn, _, events = env
+    respx.post(TRANSFER_URL).respond(202, json=transferred("octo"))
+    actions.transferRepo("A", "hubot", "octo/alpha")
+    await actions.settle()
+    assert repos.source.get_repo("A")["full_name"] == "octo/alpha"
+    assert {r["node_id"]: r for r in store.load_repos(conn, 42)}["A"]["full_name"] == "octo/alpha"
+    assert "hubot must accept" in events["done"][0]
+
+
+async def test_transfer_refused_locally(env):
+    _, repos, actions, _, _, _ = env
+    with respx.mock(assert_all_called=False) as mock:
+        route = mock.post(TRANSFER_URL)
+        actions.transferRepo("A", "acme", "octo/alph")
+        await actions.settle()
+        assert "does not match" in actions.property("error")
+        for bad, why in (("not valid!", "not a valid"), ("-acme", "not a valid"), ("OCTO", "already belongs")):
+            actions.transferRepo("A", bad, "octo/alpha")
+            await actions.settle()
+            assert why in actions.property("error")
+        assert not route.called
+    assert repos.source.get_repo("A")["owner"] == "octo"
+
+
+@respx.mock
+async def test_transfer_validation_error_shows_github_detail(env):
+    _, repos, actions, _, _, _ = env
+    respx.post(TRANSFER_URL).respond(422, json={
+        "message": "Validation Failed",
+        "errors": [{"resource": "Repository", "message": "acme already has a repository with this name"}],
+    })
+    actions.transferRepo("A", "acme", "octo/alpha")
+    await actions.settle()
+    assert "already has a repository" in actions.property("error")
+    assert repos.source.get_repo("A")["owner"] == "octo"
+
+
+def test_transfer_capabilities_and_targets(env):
+    _, repos, actions, conn, _, _ = env
+    assert actions.capabilities("A")["transfer"] and not actions.capabilities("R")["transfer"]
+    assert "admin" in actions.capabilities("R")["transferWhy"]
+    store.replace_repos(conn, 42, [repo("A", "alpha", viewer_permission="ADMIN"),
+                                   repo("B", "beta", owner="acme", full_name="acme/beta")])
+    repos._load_cache(42)
+    assert actions.transferTargets("A") == ["acme"]
+    assert actions.transferTargets("B") == ["octo"]
+
+
 # ----------------------------------------------------------- re-authorize
 def device_routes(token_body):
     respx.post(device_flow.DEVICE_CODE_URL).respond(json={

@@ -1,6 +1,8 @@
-"""Repository mutations: archive, visibility, description, delete."""
+"""Repository mutations: archive, visibility, description, transfer, delete."""
 
 from __future__ import annotations
+
+import re
 
 from .client import GitHubClient
 from .errors import GraphQLError, ScopeMissing
@@ -8,6 +10,8 @@ from .rest import _repo_path
 
 DESCRIPTION_MAX = 350  # GitHub's limit for repository descriptions
 VISIBILITIES = ("public", "private", "internal")
+# GitHub logins: alphanumerics and single inner hyphens, at most 39 characters.
+_LOGIN = re.compile(r"[A-Za-z0-9](?:-?[A-Za-z0-9]){0,38}")
 
 _ARCHIVE = """
 mutation Archive($id: ID!) {
@@ -75,3 +79,27 @@ async def set_description(client: GitHubClient, full_name: str, description: str
 async def delete_repo(client: GitHubClient, full_name: str) -> None:
     """Needs the delete_repo scope; GitHub answers 403 with X-Accepted-OAuth-Scopes otherwise."""
     await client.rest("DELETE", _repo_path(full_name))
+
+
+async def transfer_repo(client: GitHubClient, full_name: str, new_owner: str) -> dict:
+    """Ask GitHub to move the repo to `new_owner` (an organization or a user).
+
+    Transfers to an organization the viewer can create repositories in happen
+    right away; transfers to a user wait until that user accepts by email.
+    Returns {"owner", "name", "full_name", "url"} as GitHub reports them, so the
+    caller can tell which of the two happened.
+    """
+    new_owner = new_owner.strip()
+    if not _LOGIN.fullmatch(new_owner):
+        raise ValueError(f"{new_owner!r} is not a valid GitHub account or organization name.")
+    if new_owner.lower() == full_name.partition("/")[0].lower():
+        raise ValueError(f"{full_name} already belongs to {new_owner}.")
+    body = await client.rest("POST", f"{_repo_path(full_name)}/transfer", json={"new_owner": new_owner}) or {}
+    owner = (body.get("owner") or {}).get("login") or full_name.partition("/")[0]
+    name = body.get("name") or full_name.partition("/")[2]
+    return {
+        "owner": owner,
+        "name": name,
+        "full_name": body.get("full_name") or f"{owner}/{name}",
+        "url": body.get("html_url") or f"https://github.com/{owner}/{name}",
+    }

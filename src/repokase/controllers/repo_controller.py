@@ -144,6 +144,11 @@ class RepoController(QObject):
         owners = Counter(r["owner"] for r in repos)
         self._owners = sorted(owners, key=lambda o: (o != me, o.lower()))
 
+    def refresh_owners(self) -> None:
+        """A repo moved to another owner in place (transfer)."""
+        self._update_facets(self._source.repos())
+        self.changed.emit()
+
     def _save_ui_state(self) -> None:
         if not self._restoring_ui:
             store.set_setting(self._conn, UI_STATE_KEY, self._proxy.state())

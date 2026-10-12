@@ -332,6 +332,27 @@ def update_repo_fields(conn: sqlite3.Connection, account_id: int, node_id: str, 
     )
 
 
+def move_repo(conn: sqlite3.Connection, account_id: int, node_id: str, fields: dict) -> None:
+    """A transfer or rename: node_id (and so categories, runs, health) stays.
+
+    Traffic is keyed by full_name, so its history follows the repo to the new name.
+    """
+    row = conn.execute(
+        "SELECT full_name FROM repo WHERE account_id=? AND node_id=?", (account_id, node_id)
+    ).fetchone()
+    if not row:
+        return
+    old, new = row["full_name"], fields["full_name"]
+    with transaction(conn):
+        conn.execute(
+            "UPDATE repo SET owner=?, name=?, full_name=?, url=? WHERE account_id=? AND node_id=?",
+            (fields["owner"], fields["name"], new, fields["url"], account_id, node_id),
+        )
+        if old != new:
+            for table in ("traffic_daily", "traffic_referrer"):
+                conn.execute(f"UPDATE OR REPLACE {table} SET full_name=? WHERE full_name=?", (new, old))
+
+
 def delete_repo(conn: sqlite3.Connection, account_id: int, node_id: str) -> None:
     # Topics, categories, runs and health cascade. Traffic history is kept
     # (keyed by full_name) in case the repo is restored.

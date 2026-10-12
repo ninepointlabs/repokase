@@ -417,6 +417,9 @@ FocusScope {
                 case Qt.Key_V:
                     if (!(event.modifiers & Qt.ShiftModifier)) return
                     if (r) root.actions.changeVisibility(r.node_id); break
+                case Qt.Key_T:
+                    if (!(event.modifiers & Qt.ShiftModifier)) return
+                    if (r) root.actions.transfer(r.node_id); break
                 case Qt.Key_Delete:
                     if (r) root.actions.remove(r.node_id); break
                 case Qt.Key_C:

@@ -13,7 +13,7 @@ follows your Omarchy theme and font live.
 - Every repo in one list, with sorting, filtering and search. It opens instantly from a local cache and refreshes in the background.
 - Details for each repo: stats, recent GitHub Actions runs, and quick links.
 - Local categories (only on this computer) and GitHub topics.
-- Archive and unarchive, change visibility, edit the description, delete (you type the name to confirm).
+- Archive and unarchive, change visibility, edit the description, transfer to an organization or another account, delete (you type the name to confirm for transfers and deletes).
 - Traffic history beyond GitHub's 14 days, with charts.
 - GitHub Actions: re-run failed jobs, re-run or cancel runs, and start `workflow_dispatch` workflows with their input fields.
 - Health at a glance: failing CI, Dependabot alerts, stale pull requests, a missing README or license, inactivity.
@@ -168,7 +168,7 @@ Press **F1** (or `?`) in the app for the full list of shortcuts.
 | `o` | Open on GitHub |
 | `c` | Copy URL |
 | `1`–`9` | Toggle the selected repo's category |
-| `e`, `Shift+A`, `Shift+V`, `Delete` | Edit description, archive, visibility, delete |
+| `e`, `Shift+A`, `Shift+V`, `Shift+T`, `Delete` | Edit description, archive, visibility, transfer, delete |
 | `x` / Space, `Shift+↓↑`, `Ctrl+A` | Mark for bulk actions (Esc clears) |
 | `Ctrl+R` | Refresh from GitHub |
 | `Ctrl+1` / `Ctrl+2` | Focus categories / list |

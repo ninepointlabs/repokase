@@ -93,7 +93,12 @@ class GitHubClient:
             return
         h = resp.headers
         try:
-            message = resp.json().get("message", "")
+            body = resp.json()
+            message = body.get("message", "")
+            # 422s say "Validation Failed" and put the useful part in errors[].
+            details = [e.get("message") for e in body.get("errors") or [] if isinstance(e, dict) and e.get("message")]
+            if details:
+                message = "; ".join(details)
         except (ValueError, AttributeError):
             message = ""
         if status >= 500:
