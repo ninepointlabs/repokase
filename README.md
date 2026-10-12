@@ -1,6 +1,6 @@
 # Repokase
 
-**Your repos, chef's choice.**
+**Your repos, chef's choice.** · [repokase.ninepointlabs.com](https://repokase.ninepointlabs.com)
 
 ![Repokase: categories, the repository list with health badges, and the details pane](docs/screenshots/hero.png)
 

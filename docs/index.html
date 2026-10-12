@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en" data-theme="ristretto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Repokase · Your repos, chef's choice</title>
+  <meta name="description" content="Repokase is a native Omarchy desktop app for managing every GitHub repository you own, collaborate on, or reach through an organization. Fast, keyboard-driven, and it wears your theme.">
+  <meta name="theme-color" content="#2c2525">
+  <link rel="canonical" href="https://repokase.ninepointlabs.com/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://repokase.ninepointlabs.com/">
+  <meta property="og:title" content="Repokase · Your repos, chef's choice">
+  <meta property="og:description" content="A native Omarchy app for managing your GitHub repositories. Every repo on one counter.">
+  <meta property="og:image" content="https://repokase.ninepointlabs.com/screenshots/hero.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="site.css">
+  <script>
+    // Apply the saved theme before first paint so the page never flashes.
+    try {
+      const saved = new URLSearchParams(location.search).get("theme") || localStorage.getItem("repokase-theme")
+      const light = matchMedia("(prefers-color-scheme: light)").matches
+      document.documentElement.dataset.theme = saved || (light ? "catppuccin-latte" : "ristretto")
+    } catch (e) {}
+  </script>
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- ─────────────────────────────────────────── noren (header) -->
+  <header class="noren">
+    <a class="brand" href="#top" aria-label="Repokase home">
+      <img src="favicon.svg" alt="" width="28" height="28">
+      <span>repokase</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#menu">Menu</a>
+      <a href="#keys">Keys</a>
+      <a href="#kitchen">Kitchen rules</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/ninepointlabs/repokase">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- The page re-themes like the app does when you run `omarchy theme set`. -->
+  <div class="prompt" role="group" aria-label="Page theme">
+    <span class="prompt-sign" aria-hidden="true">$</span>
+    <span class="prompt-cmd">omarchy theme set</span>
+    <span class="prompt-opts">
+      <button type="button" data-set-theme="ristretto">ristretto</button>
+      <button type="button" data-set-theme="tokyo-night">tokyo-night</button>
+      <button type="button" data-set-theme="catppuccin-latte">catppuccin-latte</button>
+    </span>
+    <span class="prompt-caret" aria-hidden="true"></span>
+  </div>
+
+  <main id="main">
+    <!-- ───────────────────────────────────────────────── hero -->
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p class="kicker"><span lang="ja">お任せ</span> omakase · for your GitHub</p>
+        <h1>Your repos,<br><em>chef's choice.</em></h1>
+        <p class="lede">
+          Repokase is a native <a href="https://omarchy.org">Omarchy</a> app that sets every
+          GitHub repository you own, collaborate on, or reach through an organization out on
+          one counter: stats, CI, health and traffic, with actions a keystroke away and
+          no browser tabs.
+        </p>
+        <div class="order">
+          <code id="install-cmd">sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.0/repokase-0.2.0-1-any.pkg.tar.zst</code>
+          <button type="button" class="copy" data-copy="#install-cmd">Copy</button>
+        </div>
+        <p class="fine">v0.2.0 · Arch / Omarchy · MIT · <a href="https://github.com/ninepointlabs/repokase/releases">release notes</a></p>
+      </div>
+      <figure class="window hero-shot">
+        <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>repokase</span></div>
+        <img id="hero-img" src="screenshots/hero.png" width="1600" height="900"
+             alt="Repokase: categories and organizations in the sidebar, the repository list with health badges, and the details pane">
+      </figure>
+    </section>
+
+    <!-- ─────────────────────────────────────── kaiten (belt) -->
+    <section class="kaiten" aria-label="Repositories passing by on a conveyor belt">
+      <p class="kaiten-label">now passing · plate rims show health</p>
+      <div class="belt">
+        <ul class="plates" data-plates>
+          <li class="plate ok"><b>hyprglow</b><small>Rust · 1.3k ★</small></li>
+          <li class="plate warn"><b>habit-loop</b><small>stale PRs</small></li>
+          <li class="plate bad"><b>studio-north/infra</b><small>CI failing</small></li>
+          <li class="plate ok"><b>omarchy-weather</b><small>QML · 342 ★</small></li>
+          <li class="plate bad"><b>tinygrep</b><small>CI failing</small></li>
+          <li class="plate ok"><b>dotfiles</b><small>Shell · 97 ★</small></li>
+          <li class="plate warn"><b>shader-lab</b><small>no README</small></li>
+          <li class="plate ok"><b>design-tokens</b><small>internal</small></li>
+          <li class="plate bad"><b>pixel-forge</b><small>security</small></li>
+          <li class="plate ok"><b>rss-digest</b><small>Python · 38 ★</small></li>
+          <li class="plate ok"><b>kbd-layouts</b><small>C · 19 ★</small></li>
+          <li class="plate warn"><b>notes-sync</b><small>private</small></li>
+        </ul>
+      </div>
+      <ul class="legend" aria-label="Plate colours">
+        <li><span class="dot ok"></span>healthy</li>
+        <li><span class="dot warn"></span>needs a look</li>
+        <li><span class="dot bad"></span>failing or alerts</li>
+      </ul>
+    </section>
+
+    <!-- ───────────────────────────────────────── the menu -->
+    <section class="menu" id="menu" aria-labelledby="menu-title">
+      <header class="menu-head">
+        <p class="kicker">tonight's menu · eight courses</p>
+        <h2 id="menu-title">Kaiseki for repositories</h2>
+        <p>No ordering, no tabs, no waiting on a browser. The chef brings it out in order.</p>
+      </header>
+
+      <ol class="courses">
+        <li class="course">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">先付</span><span class="num">01</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">sakizuke</span> Every repo on one counter</h3>
+            <p>Owned, collaborator and organization repositories in a single list. It opens
+              instantly from a local cache and refreshes in the background. Sort by anything,
+              filter by visibility, language, owner or health, and search across names,
+              descriptions and topics.</p>
+            <ul class="garnish"><li>instant from cache</li><li>every word must match</li><li>local categories</li></ul>
+          </div>
+          <figure class="window"><img src="screenshots/bulk.png" width="1600" height="900" loading="lazy"
+            alt="The repository list with several repos marked for bulk actions"></figure>
+        </li>
+
+        <li class="course">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">八寸</span><span class="num">02</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">hassun</span> Native to Omarchy</h3>
+            <p>A real desktop app, not a web view. It uses Wayland app ID <code>repokase</code>
+              for your window rules, follows your system font, and adapts to Omarchy's
+              half-screen tiles: list and details side by side when there's room, one at a
+              time when there isn't.</p>
+            <ul class="garnish"><li>class:repokase</li><li>keyboard first</li><li>F1 lists every shortcut</li></ul>
+          </div>
+          <figure class="window narrow"><img src="screenshots/narrow.png" width="760" height="900" loading="lazy"
+            alt="Repokase in a narrow half-screen tile showing the details pane full width"></figure>
+        </li>
+
+        <li class="course">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">向付</span><span class="num">03</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">mukozuke</span> Clean cuts</h3>
+            <p>Edit descriptions and topics, archive and unarchive, flip visibility, transfer
+              a repository to an organization or another account, or delete it. The
+              irreversible ones open on <em>Cancel</em> and make you type the full name.</p>
+            <ul class="garnish"><li>e · edit</li><li>Shift+A · archive</li><li>Shift+V · visibility</li><li>Shift+T · transfer</li></ul>
+          </div>
+          <div class="cut" aria-label="Example of the transfer confirmation">
+            <p class="cut-title">Transfer mira-codes/pixel-forge</p>
+            <label>New owner <span class="field">studio-north</span></label>
+            <label>Type <b>mira-codes/pixel-forge</b> to confirm
+              <span class="field typing" data-type="mira-codes/pixel-forge"></span></label>
+            <p class="cut-actions"><span class="btn ghost">Cancel</span><span class="btn danger">Transfer to studio-north</span></p>
+          </div>
+        </li>
+
+        <li class="course">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">焼物</span><span class="num">04</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">yakimono</span> Straight off the grill: Actions</h3>
+            <p>Recent workflow runs for every repo. Re-run only the failed jobs, re-run or
+              cancel a run, and start <code>workflow_dispatch</code> workflows from a form
+              built from their inputs. Required inputs are checked before anything is sent.</p>
+            <ul class="garnish"><li>re-run failed</li><li>cancel</li><li>run workflow…</li></ul>
+          </div>
+          <figure class="window"><img src="screenshots/run-workflow.png" width="1600" height="900" loading="lazy"
+            alt="Run workflow dialog with version, channel and draft inputs"></figure>
+        </li>
+
+        <li class="course">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">煮物</span><span class="num">05</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">nimono</span> Slow-simmered traffic</h3>
+            <p>GitHub forgets views and clones after 14 days. Repokase records them daily
+              into its own database, so the charts keep growing. An optional systemd user
+              timer keeps recording on days you don't open the app.</p>
+            <ul class="garnish"><li>views · clones · referrers</li><li>repokase-traffic.timer</li></ul>
+          </div>
+          <figure class="window"><img src="screenshots/details-traffic.png" width="1600" height="900" loading="lazy"
+            alt="Traffic history charts for views and clones with top referrers"></figure>
+        </li>
+
+        <li class="course">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">酢の物</span><span class="num">06</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">sunomono</span> A sharp palate: health</h3>
+            <p>After every refresh, a few batched GraphQL requests check each repo, and the
+              most serious problem shows up as a badge in the list.</p>
+          </div>
+          <ul class="badges" aria-label="Health badges">
+            <li class="badge bad">CI failing</li>
+            <li class="badge bad">security</li>
+            <li class="badge warn">stale PRs</li>
+            <li class="badge warn">no README</li>
+            <li class="badge warn">no license</li>
+            <li class="badge muted">inactive</li>
+          </ul>
+        </li>
+
+        <li class="course">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">御飯</span><span class="num">07</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">gohan</span> The staples: bulk, categories, organizations</h3>
+            <p>Mark a handful of repos with <kbd>x</kbd> and archive them together or file
+              them into a category. Organizations get their own place in the sidebar: one
+              click narrows the list to an org and opens its people and settings.</p>
+            <ul class="garnish"><li>x · mark</li><li>1–9 · category</li><li>Ctrl+A · mark all</li></ul>
+          </div>
+          <figure class="window"><img src="screenshots/hero.png" width="1600" height="900" loading="lazy"
+            alt="Sidebar with categories and an Organizations section"></figure>
+        </li>
+
+        <li class="course dessert">
+          <div class="course-mark" aria-hidden="true"><span class="kanji" lang="ja">水物</span><span class="num">08</span></div>
+          <div class="course-body">
+            <h3><span class="romaji">mizumono</span> Dessert: it wears your theme</h3>
+            <p>Run <code>omarchy theme set</code> and Repokase repaints on the spot with
+              your palette, spacing and font. No restart. Try it on this page with the
+              prompt at the top.</p>
+          </div>
+          <div class="swatches" role="group" aria-label="Pick a theme for this page">
+            <button type="button" data-set-theme="ristretto">
+              <img src="screenshots/hero.png" width="1600" height="900" loading="lazy" alt="">
+              <span>ristretto</span></button>
+            <button type="button" data-set-theme="tokyo-night">
+              <img src="screenshots/theme-tokyo-night.png" width="1200" height="740" loading="lazy" alt="">
+              <span>tokyo-night</span></button>
+            <button type="button" data-set-theme="catppuccin-latte">
+              <img src="screenshots/theme-latte.png" width="1200" height="740" loading="lazy" alt="">
+              <span>catppuccin-latte</span></button>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ────────────────────────────────────── chopsticks -->
+    <section class="keys" id="keys" aria-labelledby="keys-title">
+      <header class="menu-head">
+        <p class="kicker">chopsticks · no mouse required</p>
+        <h2 id="keys-title">Eat with your keyboard</h2>
+      </header>
+      <dl class="keygrid">
+        <div><dt><kbd>j</kbd><kbd>k</kbd></dt><dd>move through the list</dd></div>
+        <div><dt><kbd>/</kbd></dt><dd>search</dd></div>
+        <div><dt><kbd>Enter</kbd></dt><dd>details</dd></div>
+        <div><dt><kbd>o</kbd></dt><dd>open on GitHub</dd></div>
+        <div><dt><kbd>c</kbd></dt><dd>copy URL</dd></div>
+        <div><dt><kbd>1</kbd>–<kbd>9</kbd></dt><dd>toggle a category</dd></div>
+        <div><dt><kbd>e</kbd></dt><dd>edit description</dd></div>
+        <div><dt><kbd>Shift</kbd><kbd>A</kbd></dt><dd>archive</dd></div>
+        <div><dt><kbd>Shift</kbd><kbd>V</kbd></dt><dd>visibility</dd></div>
+        <div><dt><kbd>Shift</kbd><kbd>T</kbd></dt><dd>transfer</dd></div>
+        <div><dt><kbd>x</kbd></dt><dd>mark for bulk</dd></div>
+        <div><dt><kbd>Ctrl</kbd><kbd>R</kbd></dt><dd>refresh</dd></div>
+      </dl>
+    </section>
+
+    <!-- ──────────────────────────────────── kitchen rules -->
+    <section class="kitchen" id="kitchen" aria-labelledby="kitchen-title">
+      <header class="menu-head">
+        <p class="kicker">kitchen rules · what happens to your data</p>
+        <h2 id="kitchen-title">An open kitchen</h2>
+      </header>
+      <ul class="rules">
+        <li><h3>Your token stays in the keyring</h3>
+          <p>Sign in with GitHub's device flow: Repokase never sees your password and has no
+            client secret. The token lives only in the Secret Service keyring, never in a file
+            or a log.</p></li>
+        <li><h3>Only GitHub, nothing else</h3>
+          <p>Nothing is sent anywhere except <code>github.com</code> and
+            <code>api.github.com</code>. No telemetry, no accounts, no server of ours.</p></li>
+        <li><h3>Minimal permissions</h3>
+          <p><code>read:user</code>, <code>repo</code> and <code>workflow</code> at sign-in.
+            <code>delete_repo</code> only the first time you delete something, after
+            Repokase explains why.</p></li>
+        <li><h3>A cache you can throw away</h3>
+          <p>Repos, runs, categories and traffic live in one SQLite file under
+            <code>~/.local/share/repokase</code>. Delete it any time; the next refresh
+            rebuilds what came from GitHub.</p></li>
+      </ul>
+    </section>
+
+    <!-- ───────────────────────────────────────── install -->
+    <section class="install" id="install" aria-labelledby="install-title">
+      <header class="menu-head">
+        <p class="kicker">take a seat</p>
+        <h2 id="install-title">Install</h2>
+      </header>
+      <div class="install-grid">
+        <div class="ticket">
+          <h3>From a release</h3>
+          <p>A ready-built Arch package. pacman pulls the dependencies from the official repos.</p>
+          <div class="order">
+            <code id="install-cmd-2">sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.0/repokase-0.2.0-1-any.pkg.tar.zst</code>
+            <button type="button" class="copy" data-copy="#install-cmd-2">Copy</button>
+          </div>
+        </div>
+        <div class="ticket">
+          <h3>From source</h3>
+          <p>Builds the tagged release, checks its checksum and runs the tests.</p>
+          <pre><code>git clone https://github.com/ninepointlabs/repokase
+cd repokase/packaging
+makepkg -si</code></pre>
+        </div>
+        <div class="ticket">
+          <h3>Then</h3>
+          <p>Launch <b>Repokase</b> from the app launcher, press <kbd>Enter</kbd> to sign in,
+            and approve the code on GitHub. You need a Secret Service keyring:
+            <code>gnome-keyring</code> ships with Omarchy.</p>
+          <p><a href="https://github.com/ninepointlabs/repokase#readme">Full README →</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="gochi" lang="ja">ごちそうさまでした</p>
+    <p>Thanks for the meal. Repokase is MIT-licensed and made by
+      <a href="https://ninepointlabs.com">Nine Point Labs</a> ·
+      <a href="https://github.com/ninepointlabs/repokase">source</a> ·
+      <a href="https://github.com/ninepointlabs/repokase/issues">issues</a></p>
+  </footer>
+</body>
+</html>

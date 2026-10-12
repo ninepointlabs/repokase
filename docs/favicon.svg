@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Repokase: a repo crate. The app icon is a fixed brand asset; UI colors come from the theme. -->
+  <rect x="8" y="8" width="112" height="112" rx="20" fill="#1f1b24"/>
+  <path d="M28 46 L64 28 L100 46 L64 64 Z" fill="#f38d70"/>
+  <path d="M28 46 L64 64 L64 102 L28 84 Z" fill="#d9725a"/>
+  <path d="M100 46 L64 64 L64 102 L100 84 Z" fill="#b85c49"/>
+  <path d="M46 37 L82 55 L82 70" fill="none" stroke="#1f1b24" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="82" cy="76" r="5" fill="#1f1b24"/>
+</svg>
