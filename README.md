@@ -70,6 +70,7 @@ It never sees your password and doesn't use a client secret. To sign out, click
 
 | Scope | Requested | Used for |
 |---|---|---|
+| `read:org` | at sign-in | Seeing which organizations you belong to, so their repositories appear in the list. Read-only: Repokase can't change anything in your organizations. Without it GitHub returns no organization repositories at all. |
 | `read:user` | at sign-in | Showing your account name and avatar. |
 | `repo` | at sign-in | Listing public **and private** repositories and their issue/PR counts; editing descriptions and topics; changing visibility; archiving. GitHub has no narrower scope that covers private repositories. |
 | `workflow` | at sign-in | Reading, re-running, cancelling and dispatching GitHub Actions workflows. |
@@ -87,6 +88,9 @@ Where your data goes:
 
 ### Organizations
 
+- **Signed in before 0.2.1?** Your sign-in doesn't include `read:org`, so organization
+  repositories are missing. Repokase shows a banner above the list: click **Allow…** and
+  approve the extra permission on GitHub. You stay signed in, and the list refreshes.
 - **Organizations with OAuth app access restrictions** only show their repositories
   after an organization owner approves Repokase
   ([GitHub docs](https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions)).

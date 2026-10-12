@@ -224,7 +224,7 @@ def render(scene: str, db_path: Path, out: Path) -> None:
     conn = db.connect(db_path)
     theme_obj = Theme(watch=False)
     auth = AuthController(store=MemoryTokenStore(), http=http, accounts=AccountCache(conn))
-    auth._token = TokenSet("demo", scope="read:user,repo,workflow")
+    auth._token = TokenSet("demo", scope="read:org,read:user,repo,workflow")
     repos = RepoController(auth, conn)
     detail = DetailController(auth, repos)
     actions = ActionsController(auth, repos)

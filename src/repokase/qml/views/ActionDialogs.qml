@@ -6,6 +6,7 @@ import "../components"
 
 // Dialogs for repository actions. Entry points take a repo node id:
 //   editDescription(id)  toggleArchive(id)  changeVisibility(id)  transfer(id)  remove(id)
+// and allowOrganizations() to grant read:org to sign-ins from before 0.2.1.
 // `flash(text)` is called for "can't do that" messages.
 Item {
     id: root
@@ -64,10 +65,16 @@ Item {
         transferDialog.show(focusBack)
         ownerField.forceActiveFocus(Qt.TabFocusReason)
     }
+    function allowOrganizations() {
+        reauthDialog.scope = "read:org"
+        reauthDialog.nodeId = ""
+        reauthDialog.show(focusBack)
+    }
     function remove(id) {
         const c = caps(id)
         if (!c.delete) { flash(c.deleteWhy); return }
         if (!c.hasDeleteScope) {
+            reauthDialog.scope = "delete_repo"
             reauthDialog.nodeId = id
             reauthDialog.show(null)
             return
@@ -307,11 +314,18 @@ Item {
     RkDialog {
         id: reauthDialog
         property string nodeId: ""
+        property string scope: "delete_repo"
+        readonly property bool orgs: scope === "read:org"
         readonly property string st: Auth.reauthState
-        title: "Allow Repokase to delete repositories"
-        message: "You signed in without the delete_repo permission, so Repokase can't delete anything yet. "
-            + "GitHub will ask you to approve this one extra permission. Repokase only uses it when you "
-            + "confirm a delete by typing the repository's name."
+        title: orgs ? "Allow Repokase to see your organizations" : "Allow Repokase to delete repositories"
+        message: orgs
+            ? "You signed in before Repokase asked for the read:org permission, so GitHub hides the "
+              + "repositories you reach through organizations. GitHub will ask you to approve this one "
+              + "read-only permission. It lets Repokase see which organizations you belong to; it can't "
+              + "change anything in them."
+            : "You signed in without the delete_repo permission, so Repokase can't delete anything yet. "
+              + "GitHub will ask you to approve this one extra permission. Repokase only uses it when you "
+              + "confirm a delete by typing the repository's name."
         closePolicy: T.Popup.CloseOnEscape
         onOpened: { reauthStart.forceActiveFocus(Qt.TabFocusReason) }
         onClosed: { if (Auth.reauthState !== "") Auth.cancelReauth(); root.focusBack() }
@@ -319,10 +333,13 @@ Item {
         Connections {
             target: Auth
             function onReauthorized() {
+                if (!reauthDialog.opened) return
                 const id = reauthDialog.nodeId
+                const orgs = reauthDialog.orgs
                 reauthDialog.close()
-                root.flash("delete_repo granted")
-                Qt.callLater(() => root.remove(id))
+                root.flash(reauthDialog.scope + " granted")
+                if (orgs) Repos.refresh()
+                else Qt.callLater(() => root.remove(id))
             }
         }
 
@@ -366,7 +383,7 @@ Item {
                 visible: reauthDialog.st === "" || reauthDialog.st === "error"
                 text: reauthDialog.st === "error" ? "Try again" : "Authorize on GitHub"
                 variant: "primary"
-                onClicked: Auth.requestScope("delete_repo", "")
+                onClicked: Auth.requestScope(reauthDialog.scope, "")
             }
         ]
     }

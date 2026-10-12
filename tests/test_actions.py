@@ -325,11 +325,38 @@ async def test_reauth_success_swaps_token_and_keeps_session(env, fast_poll):
     auth.reauthorized.connect(lambda: fired.append(1))
     await reauth(auth)
     body = respx.calls[0].request.content.decode()
-    assert "scope=delete_repo+read%3Auser+repo+workflow" in body
+    assert "scope=delete_repo+read%3Aorg+read%3Auser+repo+workflow" in body
     assert fired == [1]
     assert auth._token.access_token == "gho_new" and tokens.load().access_token == "gho_new"
     assert auth.hasScope("delete_repo")
     assert auth.property("state") == "signedIn" and auth.property("reauthState") == ""
+
+
+def test_needs_org_scope_only_for_old_oauth_tokens(env):
+    auth, _, _, _, _, _ = env
+    assert auth.property("needsOrgScope") is True  # read:user,repo,workflow
+    auth.api.granted_scopes = {"read:org", "read:user", "repo", "workflow"}
+    assert auth.property("needsOrgScope") is False
+    auth.api.granted_scopes = None
+    auth._token = TokenSet("ghu_app", scope="")  # GitHub App token: no scopes to judge
+    assert auth.property("needsOrgScope") is False
+    auth._token = TokenSet("gho_old", scope="read:user,repo,workflow")
+    auth._state = "signedOut"
+    assert auth.property("needsOrgScope") is False
+
+
+@respx.mock
+async def test_reauth_for_org_scope_keeps_existing_scopes(env, fast_poll):
+    auth, _, _, _, tokens, _ = env
+    auth._token = TokenSet("gho_old", scope="delete_repo,read:user,repo,workflow")
+    device_routes({"access_token": "gho_org", "scope": "delete_repo,read:org,read:user,repo,workflow"})
+    respx.post(GRAPHQL).respond(json={"data": {"viewer": dict(VIEWER)}},
+                                headers={"x-oauth-scopes": "delete_repo, read:org, read:user, repo, workflow"})
+    auth.requestScope("read:org", "")
+    await asyncio.gather(auth._reauth_task, return_exceptions=True)
+    assert "scope=delete_repo+read%3Aorg+read%3Auser+repo+workflow" in respx.calls[0].request.content.decode()
+    assert tokens.load().access_token == "gho_org"
+    assert auth.property("needsOrgScope") is False
 
 
 @respx.mock

@@ -9,8 +9,12 @@ DEFAULT_GITHUB_CLIENT_ID = "Ov23liXiZkM9OOZhZdBY"
 
 # Minimal scopes requested at first login. delete_repo is only requested,
 # via re-authorization, the first time the user deletes a repository.
-BASE_SCOPES = ("read:user", "repo", "workflow")
+# read:org is needed to see organization memberships: without it GitHub
+# silently returns no ORGANIZATION_MEMBER repositories. Tokens from before
+# 0.2.1 lack it; the app offers in-place re-authorization (ORG_SCOPE).
+BASE_SCOPES = ("read:org", "read:user", "repo", "workflow")
 DELETE_SCOPE = "delete_repo"
+ORG_SCOPE = "read:org"
 
 
 def github_client_id() -> str:

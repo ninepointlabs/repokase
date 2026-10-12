@@ -203,6 +203,11 @@ class AuthController(QObject):
     def hasScope(self, scope: str) -> bool:
         return scope in self.current_scopes()
 
+    def _needs_org_scope(self) -> bool:
+        # Only for OAuth tokens that report scopes; GitHub App tokens have none.
+        scopes = self.current_scopes()
+        return self._state == "signedIn" and bool(scopes) and config.ORG_SCOPE not in scopes
+
     @Slot(str, str)
     def requestScope(self, scope: str, reason: str) -> None:
         """Re-authorize in place with one more scope (e.g. delete_repo).
@@ -359,6 +364,7 @@ class AuthController(QObject):
         lambda self: ", ".join(sorted(self.api.granted_scopes or (self._token.scopes if self._token else set()))),
         notify=changed,
     )
+    needsOrgScope = Property(bool, _needs_org_scope, notify=changed)
     rateRemaining = Property(int, lambda self: self._rate.remaining if self._rate and self._rate.remaining is not None else -1, notify=changed)
     rateLimit = Property(int, lambda self: self._rate.limit if self._rate and self._rate.limit else -1, notify=changed)
     rateResetAt = Property(float, lambda self: (self._rate.reset_at or 0) * 1000 if self._rate else 0, notify=changed)

@@ -260,6 +260,23 @@ FocusScope {
             RkButton { visible: Actions.errorUrl.length > 0; text: "Authorize SSO"; variant: "primary"; onClicked: Repos.openUrl(Actions.errorUrl) }
             RkButton { text: "Dismiss"; variant: "ghost"; onClicked: Actions.clearError() }
         }
+        // Sign-ins from before 0.2.1 lack read:org, so organization repos are missing.
+        RowLayout {
+            property bool dismissed: false
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.spaceLg
+            Layout.rightMargin: Theme.spaceLg
+            Layout.topMargin: Theme.spaceSm
+            visible: Auth.needsOrgScope && !dismissed
+            spacing: Theme.spaceMd
+            RkNotice {
+                Layout.fillWidth: true
+                kind: "warning"
+                text: "Repositories you reach through organizations are missing: this sign-in can't see your organization memberships."
+            }
+            RkButton { text: "Allow…"; variant: "primary"; onClicked: root.actions.allowOrganizations() }
+            RkButton { text: "Not now"; variant: "ghost"; onClicked: parent.dismissed = true }
+        }
         Repeater {
             model: Repos.warnings
             RkNotice {
