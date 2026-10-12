@@ -78,6 +78,7 @@ class RepoController(QObject):
         # Bulk selection ("marks"), separate from the keyboard cursor.
         self._marked: set[str] = set()
         self._owners: list[str] = []
+        self._organizations: list[dict] = []
         self._task: asyncio.Task | None = None
         self._restoring_ui = False
 
@@ -114,6 +115,7 @@ class RepoController(QObject):
         if self._task and not self._task.done():
             self._task.cancel()
         self._source.set_repos([])
+        self._update_facets([])
         self._marked.clear()
         self.marksChanged.emit()
         self._categories = []
@@ -143,6 +145,8 @@ class RepoController(QObject):
         me = self._auth.property("login")
         owners = Counter(r["owner"] for r in repos)
         self._owners = sorted(owners, key=lambda o: (o != me, o.lower()))
+        orgs = {r["owner"] for r in repos if r.get("owner_is_org")}
+        self._organizations = [{"login": o, "count": owners[o]} for o in sorted(orgs, key=str.lower)]
 
     def refresh_owners(self) -> None:
         """A repo moved to another owner in place (transfer)."""
@@ -373,6 +377,7 @@ class RepoController(QObject):
     now = Property(float, lambda self: time.time() * 1000, notify=changed)
     languages = Property("QVariantList", lambda self: self._languages, notify=changed)
     owners = Property("QVariantList", lambda self: self._owners, notify=changed)
+    organizations = Property("QVariantList", lambda self: self._organizations, notify=changed)
     categories = Property("QVariantList", lambda self: self._categories, notify=categoriesChanged)
     markedCount = Property(int, lambda self: len(self._marked), notify=marksChanged)
     markedIds = Property("QVariantList", lambda self: self.marked_ids(), notify=marksChanged)

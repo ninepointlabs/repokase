@@ -23,7 +23,7 @@ query Repos($first: Int!, $after: String, $affiliations: [RepositoryAffiliation]
       pageInfo { hasNextPage endCursor }
       nodes {
         id databaseId name nameWithOwner description url visibility
-        owner { login }
+        owner { login __typename }
         isArchived isFork isTemplate isMirror
         primaryLanguage { name }
         stargazerCount forkCount
@@ -68,6 +68,7 @@ def normalize(node: dict) -> dict:
         "node_id": node["id"],
         "database_id": node.get("databaseId"),
         "owner": (node.get("owner") or {}).get("login") or node["nameWithOwner"].split("/")[0],
+        "owner_is_org": (node.get("owner") or {}).get("__typename") == "Organization",
         "name": node["name"],
         "full_name": node["nameWithOwner"],
         "description": node.get("description"),

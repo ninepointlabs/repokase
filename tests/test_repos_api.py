@@ -18,7 +18,7 @@ def node(i, **kw):
         "description": "d",
         "url": f"https://github.com/octo/repo{i}",
         "visibility": "PRIVATE",
-        "owner": {"login": "octo"},
+        "owner": {"login": "octo", "__typename": "User"},
         "isArchived": False,
         "isFork": True,
         "isTemplate": False,
@@ -73,6 +73,8 @@ def test_normalize_maps_every_field():
     assert (r["stargazers"], r["forks"], r["watchers"], r["open_issues"], r["open_prs"]) == (5, 2, 3, 4, 1)
     assert r["primary_language"] == "Go" and r["license_spdx"] == "MIT" and r["default_branch"] == "main"
     assert r["topics"] == ["cli"]
+    assert r["owner_is_org"] is False
+    assert repos.normalize(node(3, owner={"login": "acme", "__typename": "Organization"}))["owner_is_org"] is True
 
 
 def test_normalize_tolerates_nulls():

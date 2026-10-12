@@ -13,6 +13,7 @@ follows your Omarchy theme and font live.
 - Every repo in one list, with sorting, filtering and search. It opens instantly from a local cache and refreshes in the background.
 - Details for each repo: stats, recent GitHub Actions runs, and quick links.
 - Local categories (only on this computer) and GitHub topics.
+- Organizations in the sidebar: filter the list to one, open its GitHub page, people or settings, or create a new one on GitHub.
 - Archive and unarchive, change visibility, edit the description, transfer to an organization or another account, delete (you type the name to confirm for transfers and deletes).
 - Traffic history beyond GitHub's 14 days, with charts.
 - GitHub Actions: re-run failed jobs, re-run or cancel runs, and start `workflow_dispatch` workflows with their input fields.

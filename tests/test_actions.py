@@ -202,7 +202,7 @@ TRANSFER_URL = f"{REPO_URL}/transfer"
 
 
 def transferred(owner, name="alpha"):
-    return {"name": name, "full_name": f"{owner}/{name}", "owner": {"login": owner},
+    return {"name": name, "full_name": f"{owner}/{name}", "owner": {"login": owner, "type": "Organization" if owner != "octo" else "User"},
             "html_url": f"https://github.com/{owner}/{name}"}
 
 
@@ -219,11 +219,12 @@ async def test_transfer_to_org_moves_repo_and_keeps_local_data(env):
     moved = repos.source.get_repo("A")
     assert (moved["owner"], moved["full_name"], moved["url"]) == ("acme", "acme/alpha", "https://github.com/acme/alpha")
     cached = {r["node_id"]: r for r in store.load_repos(conn, 42)}["A"]
-    assert cached["full_name"] == "acme/alpha" and cached["owner"] == "acme"
+    assert cached["full_name"] == "acme/alpha" and cached["owner"] == "acme" and cached["owner_is_org"] is True
     assert store.load_traffic(conn, "acme/alpha", "views")[0]["count"] == 5
     assert store.load_traffic(conn, "octo/alpha", "views") == []
     assert conn.execute("SELECT COUNT(*) FROM repo_category WHERE repo_id='A'").fetchone()[0] == 1
     assert "acme" in repos.property("owners")
+    assert repos.property("organizations") == [{"login": "acme", "count": 1}]
     assert events["done"] == ["Transferred octo/alpha to acme/alpha"]
 
 
@@ -275,6 +276,22 @@ def test_transfer_capabilities_and_targets(env):
     repos._load_cache(42)
     assert actions.transferTargets("A") == ["acme"]
     assert actions.transferTargets("B") == ["octo"]
+
+
+# ------------------------------------------------------------ organizations
+def test_organizations_list_org_owners_with_counts(env, qapp):
+    auth, repos, _, conn, _, _ = env
+    store.replace_repos(conn, 42, [
+        repo("A", "alpha"),
+        repo("B", "beta", owner="acme", full_name="acme/beta", owner_is_org=True),
+        repo("C", "gamma", owner="acme", full_name="acme/gamma", owner_is_org=True),
+        repo("D", "delta", owner="Zeta-Labs", full_name="Zeta-Labs/delta", owner_is_org=True),
+        repo("E", "eps", owner="friend", full_name="friend/eps"),  # a collaborator, not an org
+    ])
+    repos._load_cache(42)
+    assert repos.property("organizations") == [{"login": "acme", "count": 2}, {"login": "Zeta-Labs", "count": 1}]
+    auth.signedOut.emit()
+    assert repos.property("organizations") == [] and repos.property("owners") == []
 
 
 # ----------------------------------------------------------- re-authorize

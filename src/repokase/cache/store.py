@@ -12,6 +12,7 @@ REPO_COLUMNS = (
     "node_id",
     "database_id",
     "owner",
+    "owner_is_org",
     "name",
     "full_name",
     "description",
@@ -36,7 +37,7 @@ REPO_COLUMNS = (
     "updated_at",
 )
 
-BOOL_COLUMNS = {"is_archived", "is_fork", "is_template", "is_mirror"}
+BOOL_COLUMNS = {"owner_is_org", "is_archived", "is_fork", "is_template", "is_mirror"}
 
 
 def utcnow() -> str:
@@ -345,8 +346,8 @@ def move_repo(conn: sqlite3.Connection, account_id: int, node_id: str, fields: d
     old, new = row["full_name"], fields["full_name"]
     with transaction(conn):
         conn.execute(
-            "UPDATE repo SET owner=?, name=?, full_name=?, url=? WHERE account_id=? AND node_id=?",
-            (fields["owner"], fields["name"], new, fields["url"], account_id, node_id),
+            "UPDATE repo SET owner=?, owner_is_org=?, name=?, full_name=?, url=? WHERE account_id=? AND node_id=?",
+            (fields["owner"], int(bool(fields["owner_is_org"])), fields["name"], new, fields["url"], account_id, node_id),
         )
         if old != new:
             for table in ("traffic_daily", "traffic_referrer"):

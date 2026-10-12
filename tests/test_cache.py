@@ -45,13 +45,14 @@ def conn():
 def test_migrations_apply_and_are_idempotent(tmp_path):
     path = tmp_path / "cache.db"
     c = db.connect(path)
-    assert db.schema_version(c) == 1
+    assert db.schema_version(c) == 2
     tables = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert {"account", "repo", "repo_topic", "category", "repo_category", "workflow_run",
             "sync_state", "setting", "traffic_daily", "traffic_referrer", "workflow", "health"} <= tables
+    assert "owner_is_org" in {r["name"] for r in c.execute("PRAGMA table_info(repo)")}
     c.close()
     c = db.connect(path)  # reopen: no re-apply, no error
-    assert db.schema_version(c) == 1
+    assert db.schema_version(c) == 2
     assert c.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     c.close()
 

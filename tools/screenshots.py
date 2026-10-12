@@ -113,7 +113,7 @@ def build_db(path: Path) -> None:
     rows = []
     for i, (name, owner, desc, vis, lang, st, fk, wt, iss, prs, pushed, topics, lic, extra) in enumerate(REPOS):
         r = {
-            "node_id": name, "database_id": 5000 + i, "owner": owner, "name": name,
+            "node_id": name, "database_id": 5000 + i, "owner": owner, "owner_is_org": owner != VIEWER["login"], "name": name,
             "full_name": f"{owner}/{name}", "description": desc or None,
             "url": f"https://github.com/{owner}/{name}", "visibility": vis,
             "is_archived": False, "is_fork": False, "is_template": False, "is_mirror": False,

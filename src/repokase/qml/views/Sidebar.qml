@@ -6,6 +6,8 @@ import "../components"
 
 // Category filter list. Keys: arrows/j/k move, Enter select, n new,
 // F2 rename, Delete remove, Alt+Up/Down reorder.
+// Below it, organizations that own repos in the list. Keys: arrows/j/k move,
+// Enter filter (again to clear), o open on GitHub.
 Rectangle {
     id: root
     property var dialogs
@@ -18,6 +20,12 @@ Rectangle {
     ].concat(Repos.categories.map((c) => ({ id: c.id, name: c.name, count: c.count, position: c.position, fixed: false })))
 
     function focusList() { list.forceActiveFocus(Qt.TabFocusReason) }
+    function orgUrl(login, page) {
+        return page === "people" ? "https://github.com/orgs/" + login + "/people"
+            : page === "settings" ? "https://github.com/organizations/" + login + "/settings/profile"
+            : "https://github.com/" + login
+    }
+    function toggleOrg(login) { Repos.list.owner = Repos.list.owner === login ? "" : login }
     function syncIndex() {
         for (let i = 0; i < entries.length; i++) if (entries[i].id === Repos.list.category) { list.currentIndex = i; return }
         list.currentIndex = 0
@@ -167,6 +175,122 @@ Rectangle {
             Layout.margins: Theme.rowPaddingX
             visible: Repos.categories.length > 0
             text: "n new · F2 rename · Del remove · Alt+↑↓ move"
+            role: "caption"
+            muted: true
+            wrapMode: Text.WordWrap
+            elide: Text.ElideNone
+        }
+
+        // ------------------------------------------------------ organizations
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: Theme.borderWidth
+            color: Theme.border
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.rowPaddingX
+            Layout.rightMargin: Theme.spaceSm
+            Layout.topMargin: Theme.spaceLg
+            Layout.bottomMargin: Theme.spaceSm
+            RkText { Layout.fillWidth: true; text: "ORGANIZATIONS"; role: "caption"; muted: true; font.letterSpacing: 1 }
+            RkButton {
+                variant: "ghost"
+                text: "+"
+                implicitWidth: Theme.controlHeight
+                focusPolicy: Qt.TabFocus
+                // GitHub's API cannot create organizations; this is the web form.
+                onClicked: Repos.openUrl("https://github.com/account/organizations/new")
+                Accessible.name: "New organization on GitHub"
+            }
+        }
+
+        ListView {
+            id: orgList
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(count, 6) * Theme.controlHeight
+            visible: count > 0
+            clip: true
+            activeFocusOnTab: true
+            model: Repos.organizations
+            keyNavigationEnabled: true
+            boundsBehavior: Flickable.StopAtBounds
+            highlightMoveDuration: 0
+            T.ScrollBar.vertical: RkScrollBar {}
+
+            function current() { return currentIndex >= 0 ? Repos.organizations[currentIndex] : null }
+
+            Keys.onPressed: (e) => {
+                const c = current()
+                if (e.key === Qt.Key_J) incrementCurrentIndex()
+                else if (e.key === Qt.Key_K) decrementCurrentIndex()
+                else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) { if (c) root.toggleOrg(c.login) }
+                else if (e.key === Qt.Key_O) { if (c) Repos.openUrl(root.orgUrl(c.login)) }
+                else return
+                e.accepted = true
+            }
+
+            delegate: Item {
+                id: org
+                required property var modelData
+                required property int index
+                readonly property bool active: Repos.list.owner === modelData.login
+                width: ListView.view.width
+                height: Theme.controlHeight
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: org.active ? Theme.selectedFill : orgMouse.containsMouse ? Theme.hoverFill : "transparent"
+                }
+                Rectangle {
+                    visible: org.active
+                    width: 2
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                    color: Theme.accent
+                }
+                RkFocusFrame { shown: orgList.activeFocus && org.ListView.isCurrentItem; anchors.margins: 0 }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.rowPaddingX
+                    anchors.rightMargin: Theme.rowPaddingX
+                    spacing: Theme.spaceMd
+                    RkText {
+                        Layout.fillWidth: true
+                        text: org.modelData.login
+                        color: org.active ? Theme.accent : Theme.fg
+                    }
+                    RkText { text: org.modelData.count; role: "small"; muted: true }
+                }
+
+                MouseArea {
+                    id: orgMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: { orgList.currentIndex = org.index; root.toggleOrg(org.modelData.login) }
+                }
+            }
+        }
+
+        // Links for the organization the list is filtered to.
+        Flow {
+            id: orgLinks
+            readonly property string login: Repos.organizations.some((o) => o.login === Repos.list.owner) ? Repos.list.owner : ""
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.rowPaddingX
+            Layout.rightMargin: Theme.rowPaddingX
+            Layout.topMargin: Theme.spaceSm
+            visible: login.length > 0
+            spacing: Theme.spaceSm
+            RkButton { text: "GitHub"; variant: "ghost"; onClicked: Repos.openUrl(root.orgUrl(orgLinks.login)) }
+            RkButton { text: "People"; variant: "ghost"; onClicked: Repos.openUrl(root.orgUrl(orgLinks.login, "people")) }
+            RkButton { text: "Settings"; variant: "ghost"; onClicked: Repos.openUrl(root.orgUrl(orgLinks.login, "settings")) }
+        }
+        RkText {
+            Layout.fillWidth: true
+            Layout.margins: Theme.rowPaddingX
+            text: orgList.count > 0 ? "Enter filter · o open on GitHub"
+                : "Organizations appear here once they own a repository you can see. + creates one on GitHub."
             role: "caption"
             muted: true
             wrapMode: Text.WordWrap

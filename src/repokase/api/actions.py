@@ -86,7 +86,7 @@ async def transfer_repo(client: GitHubClient, full_name: str, new_owner: str) ->
 
     Transfers to an organization the viewer can create repositories in happen
     right away; transfers to a user wait until that user accepts by email.
-    Returns {"owner", "name", "full_name", "url"} as GitHub reports them, so the
+    Returns {"owner", "owner_is_org", "name", "full_name", "url"} as GitHub reports them, so the
     caller can tell which of the two happened.
     """
     new_owner = new_owner.strip()
@@ -99,6 +99,7 @@ async def transfer_repo(client: GitHubClient, full_name: str, new_owner: str) ->
     name = body.get("name") or full_name.partition("/")[2]
     return {
         "owner": owner,
+        "owner_is_org": (body.get("owner") or {}).get("type") == "Organization",
         "name": name,
         "full_name": body.get("full_name") or f"{owner}/{name}",
         "url": body.get("html_url") or f"https://github.com/{owner}/{name}",
