@@ -1,7 +1,7 @@
 pkgbase = repokase
 	pkgdesc = Your repos, chef's choice. A native Omarchy app for managing GitHub repositories
-	pkgver = 0.1.0
-	pkgrel = 2
+	pkgver = 0.2.0
+	pkgrel = 1
 	url = https://github.com/ninepointlabs/repokase
 	arch = any
 	license = MIT
@@ -23,7 +23,7 @@ pkgbase = repokase
 	optdepends = gnome-keyring: Secret Service provider to store the GitHub token
 	optdepends = kwallet: alternative Secret Service provider
 	optdepends = xdg-utils: open GitHub pages in your browser
-	source = repokase-0.1.0.tar.gz::https://github.com/ninepointlabs/repokase/archive/refs/tags/v0.1.0.tar.gz
+	source = repokase-0.2.0.tar.gz::https://github.com/ninepointlabs/repokase/archive/refs/tags/v0.2.0.tar.gz
 	sha256sums = 59b04e728f5ddbe70978533c458dc1a909e851656846f4d2f9282203e9121743
 
 pkgname = repokase
