@@ -216,6 +216,16 @@ def render(scene: str, db_path: Path, out: Path) -> None:
         homepage = Property(str, lambda s: repokase.HOMEPAGE, constant=True)
         dataDir = Property(str, lambda s: "~/.local/share/repokase", constant=True)
         qtVersion = Property(str, lambda s: "6", constant=True)
+        organization = Property(str, lambda s: repokase.ORGANIZATION, constant=True)
+        supportEmail = Property(str, lambda s: repokase.SUPPORT_EMAIL, constant=True)
+        created = Property(str, lambda s: repokase.CREATED, constant=True)
+        license = Property(str, lambda s: repokase.LICENSE_NAME, constant=True)
+        copyright = Property(str, lambda s: repokase.COPYRIGHT, constant=True)
+        pysideVersion = Property(str, lambda s: "6", constant=True)
+        pythonVersion = Property(str, lambda s: "3", constant=True)
+        icon = Property(str, lambda s: str(ROOT / "src" / "repokase" / "assets" / "repokase.svg"), constant=True)
+        licenseText = Property(str, lambda s: repokase.LICENSE_NAME, constant=True)
+        details = Property(str, lambda s: "", constant=True)
 
     def refuse(request):
         raise httpx.ConnectError("screenshots run offline", request=request)

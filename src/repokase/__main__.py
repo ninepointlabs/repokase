@@ -9,7 +9,18 @@ import os
 import sys
 from pathlib import Path
 
-from . import APP_ID, APP_NAME, HOMEPAGE, TAGLINE, __version__
+from . import (
+    APP_ID,
+    APP_NAME,
+    COPYRIGHT,
+    CREATED,
+    HOMEPAGE,
+    LICENSE_NAME,
+    ORGANIZATION,
+    SUPPORT_EMAIL,
+    TAGLINE,
+    __version__,
+)
 
 HERE = Path(__file__).resolve().parent
 
@@ -59,8 +70,9 @@ def main(argv: list[str] | None = None) -> int:
     # Every control is our own template; never let a platform style leak in.
     os.environ["QT_QUICK_CONTROLS_STYLE"] = "Basic"
 
+    import PySide6
     import qasync
-    from PySide6.QtCore import Property, QObject, QTimer, qVersion
+    from PySide6.QtCore import Property, QObject, QTimer, QUrl, Slot, qVersion
     from PySide6.QtGui import QGuiApplication, QIcon
     from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonInstance
     from PySide6 import QtQuick  # noqa: F401  (root object must resolve to QQuickWindow)
@@ -93,6 +105,37 @@ def main(argv: list[str] | None = None) -> int:
         homepage = Property(str, lambda self: HOMEPAGE, constant=True)
         dataDir = Property(str, lambda self: str(config.data_dir()), constant=True)
         qtVersion = Property(str, lambda self: qVersion(), constant=True)
+        # For the About dialog.
+        organization = Property(str, lambda self: ORGANIZATION, constant=True)
+        supportEmail = Property(str, lambda self: SUPPORT_EMAIL, constant=True)
+        created = Property(str, lambda self: CREATED, constant=True)
+        license = Property(str, lambda self: LICENSE_NAME, constant=True)
+        copyright = Property(str, lambda self: COPYRIGHT, constant=True)
+        pysideVersion = Property(str, lambda self: PySide6.__version__, constant=True)
+        pythonVersion = Property(str, lambda self: sys.version.split()[0], constant=True)
+        icon = Property(QUrl, lambda self: QUrl.fromLocalFile(str(HERE / "assets" / "repokase.svg")), constant=True)
+
+        @Property(str, constant=True)
+        def licenseText(self) -> str:
+            try:
+                text = (HERE / "assets" / "LICENSE.txt").read_text(encoding="utf-8")
+            except OSError:
+                return f"{LICENSE_NAME}, {COPYRIGHT}"
+            # One line per paragraph, so it wraps to the dialog's width.
+            return "\n\n".join(" ".join(p.split()) for p in text.split("\n\n") if p.strip())
+
+        @Property(str, constant=True)
+        def details(self) -> str:
+            """Version details to paste into a support email."""
+            return (
+                f"{APP_NAME} {__version__}\n"
+                f"Qt {qVersion()}, PySide6 {PySide6.__version__}, Python {sys.version.split()[0]}\n"
+                f"{os.environ.get('XDG_CURRENT_DESKTOP', 'unknown desktop')}, {QGuiApplication.platformName()}"
+            )
+
+        @Slot(str)
+        def copy(self, text: str) -> None:
+            QGuiApplication.clipboard().setText(text)
 
     info = AppInfo()
     theme = Theme()
