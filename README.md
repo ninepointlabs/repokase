@@ -169,7 +169,9 @@ clears the marks.
 
 ## Using it
 
-Press **F1** (or `?`) in the app for the full list of shortcuts.
+Press **F1** (or `?`, or the `?` button next to your name) for **About Repokase**: the version,
+license, Nine Point Labs, the support address
+([help@ninepointlabs.com](mailto:help@ninepointlabs.com)) and the full list of shortcuts.
 
 | Keys | Action |
 |---|---|
@@ -184,6 +186,7 @@ Press **F1** (or `?`) in the app for the full list of shortcuts.
 | `Ctrl+R` | Refresh from GitHub |
 | `Ctrl+1` / `Ctrl+2` | Focus categories / list |
 | `Ctrl+B` / `Ctrl+I` | Toggle the categories and details panes |
+| `F1` / `?` | About Repokase and all shortcuts |
 
 The layout adapts to the window width. At half-screen tile widths it shows the list and
 opens details full-width. From 900px it shows the list and details side by side, and
