@@ -29,11 +29,20 @@ Each [GitHub release](https://github.com/ninepointlabs/repokase/releases) includ
 ready-built Arch package:
 
 ```sh
-sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.2/repokase-0.2.2-1-any.pkg.tar.zst
+sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.3/repokase-0.2.3-1-any.pkg.tar.zst
 ```
 
 pacman installs the dependencies from the official repos. To update, install the next
 release the same way. An AUR package (`yay -S repokase`) is coming.
+
+### With autonomix-cli
+
+Or install it from the GitHub releases with
+[autonomix-cli](https://github.com/ninepointlabs/autonomix-cli):
+
+```sh
+autonomix-cli add https://github.com/ninepointlabs/repokase
+```
 
 ### From source
 
