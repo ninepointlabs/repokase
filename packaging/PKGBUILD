@@ -26,7 +26,7 @@ optdepends=(
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
 checkdepends=('python-pytest' 'python-pytest-asyncio' 'python-respx')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('ab4084db5538b7f0e4ae0d604b6ec3398a60b7a4cc09c67a0bcffe17da611e6b')
+sha256sums=('026541c35d9b542945f6f09027fd0ce8fa2f991477a508495313eab542b01d8d')
 
 build() {
   cd "$pkgname-$pkgver"
