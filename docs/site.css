@@ -1,5 +1,7 @@
 /* Repokase site. Colours are the real Omarchy palettes the app ships with;
-   switching theme swaps the custom properties, exactly like the app does. */
+   switching theme swaps the custom properties, exactly like the app does.
+   A few text colours are nudged (same hue) to meet WCAG AA 4.5:1: muted in
+   all three, latte accent and cyan, and the badge text further down. */
 
 :root,
 [data-theme="ristretto"] {
@@ -10,7 +12,7 @@
   --sel: #403e41;
   --fg: #e6d9db;
   --fg-dim: #c3b7b8;
-  --muted: #9a8f90;
+  --muted: #a69c9d;
   --accent: #f38d70;
   --on-accent: #211b1b;
   --red: #fd6883;
@@ -29,7 +31,7 @@
   --sel: #292e42;
   --fg: #c0caf5;
   --fg-dim: #a9b1d6;
-  --muted: #7a83ad;
+  --muted: #8890b6;
   --accent: #7aa2f7;
   --on-accent: #13141c;
   --red: #f7768e;
@@ -48,13 +50,13 @@
   --sel: #ccd0da;
   --fg: #4c4f69;
   --fg-dim: #5c5f77;
-  --muted: #6c6f85;
-  --accent: #1e66f5;
+  --muted: #5e6174;
+  --accent: #1a59d6;
   --on-accent: #ffffff;
   --red: #d20f39;
   --yellow: #c27b12;
   --green: #40a02b;
-  --cyan: #179299;
+  --cyan: #116d72;
   --magenta: #c94fae;
   --grain: .035;
   color-scheme: light;
@@ -443,6 +445,10 @@ p { margin: 0 0 1em; }
 .badge.bad { --c: var(--red); }
 .badge.warn { --c: var(--yellow); }
 .badge.muted { --c: var(--muted); }
+/* Badge text sits on a tint of its own colour; these shades keep it at 4.5:1. */
+[data-theme="ristretto"] .badge.bad, :root:not([data-theme]) .badge.bad { --c: #fd6d87; }
+[data-theme="catppuccin-latte"] .badge.bad { --c: #be0e33; }
+[data-theme="catppuccin-latte"] .badge.warn { --c: #89570d; }
 
 .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
 .swatches button {
