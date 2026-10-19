@@ -1,0 +1,5 @@
+httpx
+qasync
+secretstorage
+pyyaml
+PySide6-Essentials==6.12.0

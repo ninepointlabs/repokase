@@ -1,0 +1,121 @@
+#!/bin/bash
+# Launcher for the Repokase AppImage.
+#
+#   Repokase.AppImage [args]              start Repokase (args go to the app)
+#   Repokase.AppImage --install-desktop-entry
+#                                         add Repokase to your app menu and dock
+#   Repokase.AppImage --remove-desktop-entry
+#                                         undo --install-desktop-entry
+#
+# The bundled Python runs isolated (-I) and Python, Qt and their libraries
+# find each other through RUNPATH, so nothing is exported: no PYTHONHOME,
+# PYTHONPATH, LD_LIBRARY_PATH, QT_PLUGIN_PATH or XDG_DATA_DIRS. Programs
+# Repokase opens (xdg-open, your browser) get your environment unchanged; the
+# app also drops the runtime's APPIMAGE/APPDIR/ARGV0/OWD for them
+# (repokase/hostenv.py). The window icon comes from the bundled SVG.
+
+APP_ID=repokase
+
+if [ -z "${APPDIR:-}" ]; then
+    APPDIR="$(dirname -- "$(readlink -f -- "$0")")"
+fi
+
+data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+apps_dir="$data_home/applications"
+icons_dir="$data_home/icons/hicolor"
+desktop_file="$apps_dir/$APP_ID.desktop"
+icon_files=(
+    "16x16/apps/$APP_ID.png" "24x24/apps/$APP_ID.png" "32x32/apps/$APP_ID.png"
+    "48x48/apps/$APP_ID.png" "64x64/apps/$APP_ID.png" "128x128/apps/$APP_ID.png"
+    "256x256/apps/$APP_ID.png" "512x512/apps/$APP_ID.png" "scalable/apps/$APP_ID.svg"
+)
+# Written into the installed desktop file so --remove-desktop-entry never
+# deletes one that came from somewhere else (e.g. the Arch package).
+marker="X-Repokase-Installed-By=AppImage"
+
+refresh_caches() {
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$apps_dir" >/dev/null 2>&1 || true
+    fi
+    if command -v gtk-update-icon-cache >/dev/null 2>&1 && [ -d "$icons_dir" ]; then
+        gtk-update-icon-cache -f -t "$icons_dir" >/dev/null 2>&1 || true
+    fi
+}
+
+# Quote a path for a desktop-file Exec key: double quotes, with ", `, $ and \
+# backslash-escaped, then every backslash doubled for the string-level escape,
+# and % doubled for field codes.
+exec_quote() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//\`/\\\`}"
+    s="${s//\$/\\\$}"
+    s="${s//\\/\\\\}"
+    s="${s//%/%%}"
+    printf '"%s"' "$s"
+}
+
+install_desktop_entry() {
+    if [ -z "${APPIMAGE:-}" ]; then
+        echo "Repokase: --install-desktop-entry only works when you run the .AppImage file itself," >&2
+        echo "not an extracted copy. Nothing was changed." >&2
+        return 1
+    fi
+    local exec_path try_path
+    exec_path="$(exec_quote "$APPIMAGE")"
+    try_path="${APPIMAGE//\\/\\\\}"
+
+    mkdir -p "$apps_dir" || return 1
+    # The bundled file has a single [Desktop Entry] group, so the marker can
+    # go at the end.
+    {
+        local line
+        while IFS= read -r line; do
+            case "$line" in
+                Exec=*)
+                    printf 'Exec=%s%s\n' "$exec_path" "${line#Exec=$APP_ID}"
+                    printf 'TryExec=%s\n' "$try_path"
+                    ;;
+                *) printf '%s\n' "$line" ;;
+            esac
+        done < "$APPDIR/$APP_ID.desktop"
+        printf '%s\n' "$marker"
+    } > "$desktop_file.tmp" && mv -f "$desktop_file.tmp" "$desktop_file" || return 1
+    echo "Installed $desktop_file"
+
+    local rel
+    for rel in "${icon_files[@]}"; do
+        install -D -m644 "$APPDIR/usr/share/icons/hicolor/$rel" "$icons_dir/$rel" || return 1
+        echo "Installed $icons_dir/$rel"
+    done
+    refresh_caches
+    echo "Repokase is now in your app menu. It starts $APPIMAGE, so keep the file where it is"
+    echo "(run --install-desktop-entry again after moving it). Undo with --remove-desktop-entry."
+}
+
+remove_desktop_entry() {
+    if [ -f "$desktop_file" ]; then
+        if grep -qx "$marker" "$desktop_file"; then
+            rm -f "$desktop_file" && echo "Removed $desktop_file"
+        else
+            echo "Left $desktop_file alone: it was not created by --install-desktop-entry."
+        fi
+    fi
+    local rel
+    for rel in "${icon_files[@]}"; do
+        if [ -f "$icons_dir/$rel" ]; then
+            rm -f "$icons_dir/$rel" && echo "Removed $icons_dir/$rel"
+        fi
+    done
+    refresh_caches
+    echo "Done."
+}
+
+case "${1:-}" in
+    --install-desktop-entry) install_desktop_entry; exit ;;
+    --remove-desktop-entry) remove_desktop_entry; exit ;;
+esac
+
+export REPOKASE_APPIMAGE=1
+exec "$APPDIR/opt/python3.12/bin/python3.12" -I "$APPDIR/usr/bin/$APP_ID" "$@"

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata: shown by software centers and AppImage integrators. -->
+<component type="desktop-application">
+  <id>com.ninepointlabs.repokase</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Repokase</name>
+  <summary>Manage your GitHub repositories from the desktop</summary>
+  <developer id="com.ninepointlabs">
+    <name>Nine Point Labs</name>
+  </developer>
+  <description>
+    <p>
+      Repokase shows every GitHub repository you own, collaborate on or see through an
+      organization, with their stats, CI status and topics, and lets you act on them
+      without opening the browser. It is fast, fully keyboard-driven, and follows your
+      Omarchy theme and font live.
+    </p>
+    <ul>
+      <li>Every repository in one list, with sorting, filtering and search, opened instantly from a local cache</li>
+      <li>Details for each repository: stats, recent GitHub Actions runs and quick links</li>
+      <li>Traffic history beyond GitHub's 14 days, with charts</li>
+      <li>Re-run, cancel and start GitHub Actions workflows</li>
+      <li>Health at a glance: failing CI, Dependabot alerts, stale pull requests</li>
+      <li>Archive, change visibility, transfer or delete, one repository at a time or in bulk</li>
+    </ul>
+    <p>
+      Your sign-in is stored in the desktop keyring (GNOME Keyring or KWallet), never in a file.
+    </p>
+  </description>
+  <launchable type="desktop-id">repokase.desktop</launchable>
+  <provides>
+    <binary>repokase</binary>
+  </provides>
+  <url type="homepage">https://repokase.ninepointlabs.com</url>
+  <url type="bugtracker">https://github.com/ninepointlabs/repokase/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Categories, the repository list with health badges, and the details pane</caption>
+      <image>https://repokase.ninepointlabs.com/screenshots/hero.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Traffic history and workflow runs for a repository</caption>
+      <image>https://repokase.ninepointlabs.com/screenshots/details-traffic.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>Development</category>
+    <category>RevisionControl</category>
+  </categories>
+  <keywords>
+    <keyword>github</keyword>
+    <keyword>git</keyword>
+    <keyword>repository</keyword>
+    <keyword>actions</keyword>
+  </keywords>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.2.4" date="2026-10-17">
+      <description>
+        <p>The About screen scrolls when the window is short, and Close always stays visible.</p>
+      </description>
+    </release>
+    <release version="0.2.3" date="2026-10-17"/>
+    <release version="0.2.2" date="2026-10-12"/>
+    <release version="0.2.1" date="2026-10-12"/>
+    <release version="0.2.0" date="2026-10-12"/>
+    <release version="0.1.0" date="2026-09-28"/>
+  </releases>
+</component>
