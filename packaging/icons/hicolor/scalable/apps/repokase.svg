@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
   <!-- Repokase: a repo crate. The app icon is a fixed brand asset; UI colors come from the theme. -->
   <rect x="8" y="8" width="112" height="112" rx="20" fill="#1f1b24"/>
   <path d="M28 46 L64 28 L100 46 L64 64 Z" fill="#f38d70"/>

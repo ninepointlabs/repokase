@@ -1,0 +1,136 @@
+# Builds the Repokase AppImage on Ubuntu 22.04 and attaches it to releases,
+# next to the Arch package (which is built outside CI and left untouched).
+#
+# - Pull requests that touch the app or its packaging: build + smoke test only.
+# - A published release: build from the release tag and attach
+#   repokase-<version>-x86_64.AppImage, .zsync and .sha256.
+# - Run workflow (workflow_dispatch) with a tag: build that tag's source with
+#   the packaging on the chosen branch, and attach to the existing release.
+#   This is how an earlier release (e.g. v0.2.4) gets an AppImage.
+name: AppImage
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - "packaging/**"
+      - ".github/workflows/appimage.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and attach the AppImage to, e.g. v0.2.4"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: appimage-${{ github.event.release.tag_name || inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Check out packaging
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check out the tag's source
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          path: app-src
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update -qq
+          grep -v '^#' packaging/appimage/build-deps.txt | xargs sudo apt-get install -y -qq --no-install-recommends
+
+      - name: Build
+        run: |
+          if [ -d app-src ]; then
+            packaging/appimage/build.sh --app-src app-src
+          else
+            packaging/appimage/build.sh
+          fi
+
+      - name: Version matches the release tag
+        if: env.TAG != ''
+        run: |
+          version="$(ls dist-appimage/*.AppImage | sed -n 's|.*/repokase-\(.*\)-x86_64\.AppImage$|\1|p')"
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::Built version $version does not match tag $TAG"
+            exit 1
+          fi
+
+      - name: Smoke test
+        run: packaging/appimage/smoke-test.sh dist-appimage/repokase-*-x86_64.AppImage
+
+      # Informational: which distros' glibc/libstdc++ can run it. appimagelint
+      # only publishes a rolling build, so it is pinned by hash and allowed to
+      # fail without failing the build.
+      - name: appimagelint
+        continue-on-error: true
+        run: |
+          # It mounts the AppImage it checks, which needs FUSE.
+          sudo apt-get install -y -qq fuse3 >/dev/null
+          curl -fsSL -o appimagelint.AppImage \
+            https://github.com/TheAssassin/appimagelint/releases/download/continuous/appimagelint-x86_64.AppImage
+          echo "61dc4ec2d5697249644bb559ac917bd60196bc2eebb9752582f976f717ab7869  appimagelint.AppImage" | sha256sum -c
+          chmod +x appimagelint.AppImage
+          # --appimage-extract-and-run, not the environment variable: that
+          # would be inherited by the --appimage-mount call on our AppImage.
+          status=0
+          ./appimagelint.AppImage --appimage-extract-and-run dist-appimage/repokase-*-x86_64.AppImage \
+            > appimagelint.log 2>&1 || status=$?
+          grep -E '\[(✔|✖)\]|required version' appimagelint.log || true
+          if [ "$status" != 0 ]; then
+            tail -n 40 appimagelint.log
+            exit "$status"
+          fi
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: appimage
+          path: dist-appimage/
+          if-no-files-found: error
+
+  attach:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: appimage
+          path: dist-appimage
+
+      # Only the three AppImage files are uploaded (--clobber replaces an
+      # earlier AppImage upload of the same name); nothing is ever deleted.
+      - name: Attach to the release
+        run: |
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > before.txt
+          echo "Assets before:"; sed 's/^/  /' before.txt
+          gh release upload "$TAG" --clobber \
+            dist-appimage/repokase-*-x86_64.AppImage \
+            dist-appimage/repokase-*-x86_64.AppImage.zsync \
+            dist-appimage/repokase-*-x86_64.AppImage.sha256
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > after.txt
+          echo "Assets after:"; sed 's/^/  /' after.txt
+          missing="$(comm -23 before.txt after.txt)"
+          if [ -n "$missing" ]; then
+            echo "::error::Assets disappeared: $missing"
+            exit 1
+          fi

@@ -43,6 +43,32 @@ FALLBACK_COLORS: dict[str, str] = {
     "bright_magenta": "#bb9af7",
 }
 
+# Catppuccin Latte, used instead when no Omarchy theme can be read and the
+# desktop asks for light (freedesktop appearance portal).
+FALLBACK_LIGHT_COLORS: dict[str, str] = {
+    "accent": "#1e66f5",
+    "selection": "#ccd0da",
+    "muted": "#acb0be",
+    "background": "#eff1f5",
+    "dark_background": "#e3e4e8",
+    "darker_background": "#d7d8dc",
+    "lighter_background": "#dce0e8",
+    "foreground": "#4c4f69",
+    "red": "#d20f39",
+    "yellow": "#df8e1d",
+    "orange": "#d84e2b",
+    "green": "#40a02b",
+    "cyan": "#179299",
+    "blue": "#1e66f5",
+    "magenta": "#ea76cb",
+    "bright_red": "#d20f39",
+    "bright_yellow": "#df8e1d",
+    "bright_green": "#40a02b",
+    "bright_cyan": "#179299",
+    "bright_blue": "#1e66f5",
+    "bright_magenta": "#ea76cb",
+}
+
 # Defaults mirror /usr/share/omarchy/shell/Commons/Style.qml.
 FALLBACK_CONTROLS: dict[str, float] = {
     "normal-fill-alpha": 0.04,
@@ -115,8 +141,8 @@ def _num(value: object, fallback: float) -> float:
     return float(value)
 
 
-def _pick(raw: dict, key: str) -> Rgba:
-    return parse_color(raw.get(key)) or parse_color(FALLBACK_COLORS[key])
+def _pick(raw: dict, key: str, fallback: dict[str, str] = FALLBACK_COLORS) -> Rgba:
+    return parse_color(raw.get(key)) or parse_color(fallback[key])
 
 
 def _shell_color(shell: dict, section: str, key: str) -> Rgba | None:
@@ -135,7 +161,8 @@ def _first_saturated(candidates: list[Rgba], fallback: Rgba) -> Rgba:
     return fallback
 
 
-def resolve(theme_dir: Path | None) -> ThemeData:
+def resolve(theme_dir: Path | None, prefer_light: bool = False) -> ThemeData:
+    """prefer_light picks the light built-in palette when no theme is readable."""
     colors_raw: dict = {}
     shell: dict = {}
     name = "fallback"
@@ -150,18 +177,22 @@ def resolve(theme_dir: Path | None) -> ThemeData:
     source = "omarchy" if colors_raw else "fallback"
     if not colors_raw:
         name = "fallback"
+    fallback = FALLBACK_LIGHT_COLORS if prefer_light and not colors_raw else FALLBACK_COLORS
 
-    bg = _pick(colors_raw, "background")
-    fg = _pick(colors_raw, "foreground")
+    def pick(key: str) -> Rgba:
+        return _pick(colors_raw, key, fallback)
+
+    bg = pick("background")
+    fg = pick("foreground")
     mode = colors_raw.get("mode")
     is_dark = mode != "light" if mode in ("light", "dark") else bg.luminance() < 0.4
 
-    accent = _pick(colors_raw, "accent")
-    muted = _pick(colors_raw, "muted")
+    accent = pick("accent")
+    muted = pick("muted")
     t = 0.0
     while muted.contrast(bg) < MUTED_MIN_CONTRAST and t < 1.0:
         t += 0.1
-        muted = _pick(colors_raw, "muted").mix(fg, t)
+        muted = pick("muted").mix(fg, t)
 
     controls = {k: _num(shell.get("controls", {}).get(k), v) for k, v in FALLBACK_CONTROLS.items()}
     focus_ring = _shell_color(shell, "hyprland", "active-border") or accent
@@ -169,7 +200,7 @@ def resolve(theme_dir: Path | None) -> ThemeData:
     # A real theme missing a hue (e.g. `white` has no orange) gets its accent,
     # not a foreign fallback hue.
     ansi = {
-        k: (parse_color(colors_raw.get(k)) or accent) if colors_raw else _pick(colors_raw, k)
+        k: (parse_color(colors_raw.get(k)) or accent) if colors_raw else pick(k)
         for k in ANSI_KEYS
     }
     bright = {k: parse_color(colors_raw.get(f"bright_{k}")) for k in ANSI_KEYS}
@@ -186,15 +217,15 @@ def resolve(theme_dir: Path | None) -> ThemeData:
 
     colors = {
         "bg": bg,
-        "bgSunken": _pick(colors_raw, "dark_background"),
-        "bgInset": _pick(colors_raw, "darker_background"),
-        "bgRaised": _pick(colors_raw, "lighter_background"),
+        "bgSunken": pick("dark_background"),
+        "bgInset": pick("darker_background"),
+        "bgRaised": pick("lighter_background"),
         "fg": fg,
         "fgSecondary": fg.mix(bg, 0.25),
         "fgMuted": muted,
         "accent": accent,
         "accentFg": accent_fg,
-        "selection": _pick(colors_raw, "selection"),
+        "selection": pick("selection"),
         "normalFill": fg.with_alpha(controls["normal-fill-alpha"]),
         "hoverFill": fg.with_alpha(controls["hover-cursor-fill-alpha"]),
         "focusFill": fg.with_alpha(controls["focus-fill-alpha"]),

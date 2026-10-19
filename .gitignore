@@ -7,3 +7,4 @@ dist/
 pkg/
 src/*.tar.*
 *.log
+dist-appimage/

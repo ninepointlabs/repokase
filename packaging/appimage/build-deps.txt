@@ -1,0 +1,41 @@
+# Ubuntu 22.04 packages for build.sh and smoke-test.sh (CI and docker-build.sh).
+# Build tools
+ca-certificates
+curl
+file
+binutils
+patchelf
+zsync
+desktop-file-utils
+appstream
+# Libraries Qt's platform plugins link; build.sh copies the ones not on the
+# AppImage excludelist into the image.
+libdbus-1-3
+libegl1
+libfontconfig1
+libgl1
+libglib2.0-0
+libopengl0
+libwayland-client0
+libwayland-cursor0
+libwayland-egl1
+libxcb-cursor0
+libxcb-icccm4
+libxcb-image0
+libxcb-keysyms1
+libxcb-randr0
+libxcb-render-util0
+libxcb-shape0
+libxcb-sync1
+libxcb-xfixes0
+libxcb-xinerama0
+libxcb-xkb1
+libxkbcommon-x11-0
+libxkbcommon0
+# Smoke test
+dbus
+libgl1-mesa-dri
+x11-utils
+xauth
+xdotool
+xvfb
