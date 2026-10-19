@@ -20,6 +20,7 @@ from . import (
     SUPPORT_EMAIL,
     TAGLINE,
     __version__,
+    hostenv,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -39,6 +40,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="with --snapshot-traffic: skip if a snapshot ran in the last 20 hours",
     )
+    # Packaging check (AppImage CI): start the full UI, report, quit.
+    parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
 
 
@@ -53,6 +56,9 @@ async def _shutdown(auth) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # From the AppImage: programs we start (xdg-open, the browser) must not
+    # see the AppImage runtime's variables.
+    hostenv.restore()
     args = _parse_args(sys.argv[1:] if argv is None else argv)
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
@@ -156,9 +162,36 @@ def main(argv: list[str] | None = None) -> int:
     qmlRegisterSingletonInstance(WorkflowsController, "Repokase", 1, 0, "Workflows", workflows)
 
     engine = QQmlApplicationEngine()
+    qml_warnings: list[str] = []
+    if args.self_test:
+        engine.warnings.connect(lambda ws: qml_warnings.extend(w.toString() for w in ws))
     engine.load(str(HERE / "qml" / "Main.qml"))
     if not engine.rootObjects():
         return 1
+
+    status = 0
+    if args.self_test:
+        def report():
+            nonlocal status
+            win = engine.rootObjects()[0]
+            print(
+                f"self-test: platform={QGuiApplication.platformName()} "
+                f"app_id={QGuiApplication.desktopFileName()} visible={win.isVisible()} "
+                f"theme={theme.source}/{'dark' if theme.isDark else 'light'} radius={theme.radius}",
+                flush=True,
+            )
+            for w in qml_warnings:
+                print(f"self-test: QML warning: {w}", flush=True)
+            status = 1 if qml_warnings or not win.isVisible() else 0
+            # CI points this at a fake xdg-open to check what children inherit.
+            url = os.environ.get("REPOKASE_SELF_TEST_URL")
+            if url:
+                from PySide6.QtGui import QDesktopServices
+
+                QDesktopServices.openUrl(QUrl(url))
+            QTimer.singleShot(1000, app.quit)
+
+        QTimer.singleShot(int(os.environ.get("REPOKASE_SELF_TEST_DELAY", "2000")), report)
 
     # Development aid: REPOKASE_SCREENSHOT=out.png grabs the window after a
     # short delay and exits.
@@ -180,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
         loop.run_forever()
         loop.run_until_complete(_shutdown(auth))
     conn.close()
-    return 0
+    return status
 
 
 if __name__ == "__main__":
