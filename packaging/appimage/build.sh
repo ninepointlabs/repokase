@@ -186,8 +186,13 @@ is_excluded() {
     for x in "${EXCLUDED[@]}"; do [ "$x" = "$1" ] && return 0; done
     return 1
 }
-elfs() { find "$APPDIR" -type f \( -name '*.so' -o -name '*.so.*' -o -perm -u+x \) -print0 |
-    while IFS= read -r -d '' f; do head -c4 "$f" 2>/dev/null | grep -q $'\x7fELF' && printf '%s\n' "$f"; done; }
+elfs() {
+    local f
+    find "$APPDIR" -type f \( -name '*.so' -o -name '*.so.*' -o -perm -u+x \) -print0 |
+        while IFS= read -r -d '' f; do
+            if head -c4 "$f" 2>/dev/null | grep -q $'\x7fELF'; then printf '%s\n' "$f"; fi
+        done
+}
 # Copied libraries go next to the Qt libraries: Qt and its plugins find them
 # through their own RUNPATH, and the copies get RUNPATH=$ORIGIN for theirs.
 for _ in 1 2 3 4 5; do
@@ -203,12 +208,13 @@ for _ in 1 2 3 4 5; do
             chmod 644 "$QT/lib/$name"
             patchelf --set-rpath '$ORIGIN' "$QT/lib/$name"
             added=1
-        done < <(env -u LD_LIBRARY_PATH ldd "$elf" 2>/dev/null | grep '=>' || true)
+        done < <({ env -u LD_LIBRARY_PATH ldd "$elf" 2>/dev/null || true; } | grep '=>' || true)
     done < <(elfs)
     [ "$added" = 0 ] && break
 done
 missing="$(elfs | while IFS= read -r elf; do
-    env -u LD_LIBRARY_PATH ldd "$elf" 2>/dev/null | sed -n "s|^\s*\(\S*\) => not found|\1 (${elf#"$APPDIR"/})|p"
+    { env -u LD_LIBRARY_PATH ldd "$elf" 2>/dev/null || true; } |
+        sed -n "s|^\s*\(\S*\) => not found|\1 (${elf#"$APPDIR"/})|p"
 done)"
 if [ -n "$missing" ]; then
     echo "Unresolved libraries (install them on the build host):" >&2
