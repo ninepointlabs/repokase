@@ -1,7 +1,7 @@
 APP_NAME = "Repokase"
 APP_ID = "repokase"
 TAGLINE = "Your repos, chef's choice."
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 HOMEPAGE = "https://github.com/ninepointlabs/repokase"
 ORGANIZATION = "Nine Point Labs"
 SUPPORT_EMAIL = "help@ninepointlabs.com"
