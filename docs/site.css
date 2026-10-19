@@ -555,6 +555,10 @@ kbd {
   font-size: .82rem;
 }
 .gochi { font-family: var(--serif); font-size: 1.6rem; color: var(--accent); letter-spacing: .2em; margin-bottom: .4rem; }
+.foot .social { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 12px 0; }
+.foot .social a { display: inline-flex; color: var(--muted); }
+.foot .social a:hover, .foot .social a:focus-visible { color: var(--accent); }
+.foot .social svg { width: 18px; height: 18px; fill: currentColor; }
 
 /* ─────────────────────────────────────────────────── responsive */
 @media (max-width: 900px) {
