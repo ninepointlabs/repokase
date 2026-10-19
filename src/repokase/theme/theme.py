@@ -6,8 +6,8 @@ import logging
 import os
 from pathlib import Path
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
-from PySide6.QtGui import QColor
+from PySide6.QtCore import Property, QObject, Qt, Signal, Slot
+from PySide6.QtGui import QColor, QGuiApplication
 
 from .. import config
 from . import system
@@ -21,7 +21,23 @@ def current_theme_dir() -> Path:
     override = os.environ.get("REPOKASE_THEME_DIR")
     if override:
         return Path(override)
-    return config.state_home() / "omarchy" / "current" / "theme"
+    current = config.state_home() / "omarchy" / "current" / "theme"
+    # Omarchy releases before the move to ~/.local/state kept it in ~/.config.
+    legacy = config.config_home() / "omarchy" / "current" / "theme"
+    if not current.exists() and legacy.exists():
+        return legacy
+    return current
+
+
+def system_prefers_light() -> bool:
+    """The desktop's light/dark preference, for when there is no Omarchy theme."""
+    scheme = system.portal_color_scheme()
+    if scheme is not None:
+        return scheme == "light"
+    app = QGuiApplication.instance()
+    if isinstance(app, QGuiApplication):
+        return app.styleHints().colorScheme() == Qt.ColorScheme.Light
+    return False
 
 
 def _color_prop(key: str, notify):
@@ -57,10 +73,20 @@ class Theme(QObject):
                 parent=self,
             )
             self._watcher.changed.connect(self.reload)
+            app = QGuiApplication.instance()
+            if isinstance(app, QGuiApplication):
+                # Off Omarchy: follow the desktop switching light/dark.
+                app.styleHints().colorSchemeChanged.connect(self._color_scheme_changed)
+
+    def _color_scheme_changed(self, _scheme) -> None:
+        if self._data.source == "fallback":
+            self.reload()
 
     def _load(self) -> bool:
         """Re-resolve everything; returns False when nothing changed."""
         data = resolve(self._theme_dir)
+        if data.source == "fallback" and system_prefers_light():
+            data = resolve(self._theme_dir, prefer_light=True)
         family = system.monospace_family()
         radius = system.hyprland_rounding()
         if getattr(self, "_data", None) == data and family == self._family and radius == self._radius:

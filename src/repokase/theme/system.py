@@ -32,3 +32,32 @@ def hyprland_rounding() -> int:
         return max(0, int(json.loads(out).get("int", 0)))
     except (ValueError, TypeError, AttributeError):
         return 0
+
+
+def portal_color_scheme() -> str | None:
+    """The freedesktop appearance portal's color scheme: "dark", "light" or None.
+
+    Only consulted when there is no Omarchy theme (GNOME, KDE and others).
+    None means no preference, no session bus or no portal.
+    """
+    try:
+        from jeepney import DBusAddress, new_method_call
+        from jeepney.io.blocking import open_dbus_connection
+    except ImportError:
+        return None
+    portal = DBusAddress(
+        "/org/freedesktop/portal/desktop",
+        bus_name="org.freedesktop.portal.Desktop",
+        interface="org.freedesktop.portal.Settings",
+    )
+    msg = new_method_call(portal, "ReadOne", "ss", ("org.freedesktop.appearance", "color-scheme"))
+    try:
+        with open_dbus_connection(bus="SESSION") as conn:
+            reply = conn.send_and_get_reply(msg, timeout=1)
+        value = reply.body[0]
+        # ReadOne returns the value as a variant: (signature, value).
+        if isinstance(value, tuple):
+            value = value[1]
+    except Exception:  # no bus, no portal, timeout, old portal without ReadOne
+        return None
+    return {1: "dark", 2: "light"}.get(value)

@@ -96,6 +96,19 @@ def test_none_uses_fallback():
     assert resolve(None).source == "fallback"
 
 
+def test_fallback_follows_a_light_desktop():
+    t = resolve(Path("/nonexistent/theme"), prefer_light=True)
+    assert t.source == "fallback"
+    assert not t.is_dark
+    assert t.colors["bg"].hex() == "#eff1f5"
+    assert t.colors["fgMuted"].contrast(t.colors["bg"]) >= 3.0
+
+
+def test_light_preference_never_overrides_an_omarchy_theme():
+    dark = resolve(FIXTURES / "ristretto")
+    assert resolve(FIXTURES / "ristretto", prefer_light=True) == dark
+
+
 def test_corrupt_colors_toml_falls_back(tmp_path):
     (tmp_path / "colors.toml").write_text("this is = = not toml")
     t = resolve(tmp_path)
