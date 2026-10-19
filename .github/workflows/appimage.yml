@@ -84,8 +84,16 @@ jobs:
             https://github.com/TheAssassin/appimagelint/releases/download/continuous/appimagelint-x86_64.AppImage
           echo "61dc4ec2d5697249644bb559ac917bd60196bc2eebb9752582f976f717ab7869  appimagelint.AppImage" | sha256sum -c
           chmod +x appimagelint.AppImage
-          APPIMAGE_EXTRACT_AND_RUN=1 ./appimagelint.AppImage dist-appimage/repokase-*-x86_64.AppImage 2>&1 |
-            grep -E '\[(✔|✖)\]|required version'
+          # --appimage-extract-and-run, not the environment variable: that
+          # would be inherited by the --appimage-mount call on our AppImage.
+          status=0
+          ./appimagelint.AppImage --appimage-extract-and-run dist-appimage/repokase-*-x86_64.AppImage \
+            > appimagelint.log 2>&1 || status=$?
+          grep -E '\[(✔|✖)\]|required version' appimagelint.log || true
+          if [ "$status" != 0 ]; then
+            tail -n 40 appimagelint.log
+            exit "$status"
+          fi
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
