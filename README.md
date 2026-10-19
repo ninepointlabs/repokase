@@ -19,7 +19,8 @@ follows your Omarchy theme and font live.
 - GitHub Actions: re-run failed jobs, re-run or cancel runs, and start `workflow_dispatch` workflows with their input fields.
 - Health at a glance: failing CI, Dependabot alerts, stale pull requests, a missing README or license, inactivity.
 - Bulk actions: mark several repositories to archive or unarchive them, or add or remove a category.
-- Repaints immediately when you run `omarchy theme set`. On other Arch systems it falls back to a built-in palette.
+- Repaints immediately when you run `omarchy theme set`. On other systems it uses a built-in light or dark palette that follows your desktop's setting.
+- Omarchy first, and it runs on other Linux distributions too, as an [AppImage](#other-linux-distributions-appimage).
 
 ## Install
 
@@ -58,6 +59,38 @@ runs the test suite, and installs the package.
 Runtime dependencies (all in the official repos): `pyside6`, `python-httpx`,
 `python-qasync`, `python-secretstorage`, `python-yaml`, `python-typing_extensions`. You also need a **Secret Service** provider to
 store your sign-in: `gnome-keyring` (installed on Omarchy) or KWallet.
+
+### Other Linux distributions (AppImage)
+
+Repokase is made for Omarchy, and it also runs on other Linux desktops (Ubuntu 22.04
+or newer, Debian 12 or newer, Fedora, openSUSE and others on x86_64) as an AppImage.
+Download `repokase-<version>-x86_64.AppImage` from the
+[latest release](https://github.com/ninepointlabs/repokase/releases/latest), then:
+
+```sh
+chmod +x repokase-*-x86_64.AppImage
+./repokase-*-x86_64.AppImage
+```
+
+Everything Repokase needs is inside the file. To add it to your app menu and dock:
+
+- **[Gear Lever](https://flathub.org/apps/it.mijorus.gearlever)** or
+  **[AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher)** integrate it
+  for you, with the right icon, and can update it in place when a new release is out.
+- Or let the AppImage do it: `./repokase-*-x86_64.AppImage --install-desktop-entry`
+  adds a menu entry and icons under `~/.local/share` that start the AppImage where it
+  is now. `--remove-desktop-entry` removes exactly those files again. Run
+  `--install-desktop-entry` again if you move the file.
+
+If it doesn't start and the message mentions FUSE, install your distribution's FUSE
+package (`fuse3` on Ubuntu, Debian and Fedora; older guides call it `libfuse2` or
+`fuse2`, which works too), or run it without FUSE:
+`./repokase-*-x86_64.AppImage --appimage-extract-and-run`.
+
+On other desktops Repokase uses its built-in palette, light or dark to match your
+desktop's appearance setting. Like on Omarchy, it needs a Secret Service provider for
+your sign-in: GNOME and KDE have one (GNOME Keyring, KWallet); on other desktops install
+`gnome-keyring`.
 
 ## First sign-in
 
@@ -132,6 +165,21 @@ journalctl --user -u repokase-traffic.service         # what it recorded
 ```
 
 You can also run it by hand: `repokase --snapshot-traffic`.
+
+With the AppImage, the timer isn't installed for you. To set it up, point its
+`ExecStart` at your AppImage (the path must not contain spaces, and update it if you
+move or rename the file):
+
+```sh
+app="$HOME/Applications/repokase-x86_64.AppImage"   # where your AppImage is
+base=https://raw.githubusercontent.com/ninepointlabs/repokase/main/packaging/systemd
+mkdir -p ~/.config/systemd/user
+curl -fsSL "$base/repokase-traffic.timer" -o ~/.config/systemd/user/repokase-traffic.timer
+curl -fsSL "$base/repokase-traffic.service" | sed "s|^ExecStart=/usr/bin/repokase|ExecStart=$app|" \
+  > ~/.config/systemd/user/repokase-traffic.service
+systemctl --user daemon-reload
+systemctl --user enable --now repokase-traffic.timer
+```
 
 ![Traffic history: 14-day totals, views and clones charts with a hover readout, top referrers, and workflow runs](docs/screenshots/details-traffic.png)
 
@@ -215,7 +263,10 @@ Repokase reads the active Omarchy theme from `~/.local/state/omarchy/current/the
   follows Hyprland's `decoration:rounding`.
 
 Repokase watches those files. When you switch theme or font it repaints immediately,
-with no restart. Without an Omarchy theme it uses a built-in Tokyo Night palette.
+with no restart. Without an Omarchy theme it uses a built-in palette: Tokyo Night, or
+Catppuccin Latte when your desktop asks for light (the freedesktop appearance setting
+that GNOME, KDE and others share), and Qt's square corners instead of Hyprland's
+rounding.
 
 <table>
   <tr>
@@ -246,6 +297,9 @@ for your version.
 
 - **"No Secret Service is available"**: install and start a keyring provider
   (`gnome-keyring`, or KWallet on KDE). Repokase won't store your token anywhere else.
+- **The AppImage won't start**: see the FUSE note under
+  [Other Linux distributions](#other-linux-distributions-appimage). Run it from a
+  terminal to see why; `--debug` adds verbose logs.
 - **Sign-in takes a few seconds after approving**: normal. GitHub makes apps wait about
   5 seconds between checks.
 - **Some organization repos are missing**: see [Organizations](#organizations).
@@ -269,6 +323,9 @@ QT_QPA_PLATFORM=offscreen .venv/bin/pytest
 - `tools/screenshots.py` regenerates the images in `docs/screenshots/` from invented
   demo data. It runs offline in offscreen Qt and never touches your keyring, cache or
   GitHub account.
+- `packaging/appimage/docker-build.sh` builds the AppImage in an Ubuntu 22.04 container
+  and runs `smoke-test.sh` on it, the same steps as `.github/workflows/appimage.yml`.
+  The result lands in `dist-appimage/`.
 - Useful environment variables:
   - `REPOKASE_THEME_DIR` points at any theme directory, for testing other themes.
   - `GITHUB_CLIENT_ID` uses your own GitHub OAuth App. It must have **Device Flow**
