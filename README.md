@@ -64,6 +64,7 @@ store your sign-in: `gnome-keyring` (installed on Omarchy) or KWallet.
 
 Repokase is made for Omarchy, and it also runs on other Linux desktops (Ubuntu 22.04
 or newer, Debian 12 or newer, Fedora, openSUSE and others on x86_64) as an AppImage.
+It needs glibc 2.34 or newer, which covers most distributions from 2022 on.
 Download `repokase-<version>-x86_64.AppImage` from the
 [latest release](https://github.com/ninepointlabs/repokase/releases/latest), then:
 
