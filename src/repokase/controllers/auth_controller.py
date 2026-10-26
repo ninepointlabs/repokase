@@ -21,6 +21,11 @@ from ..auth.token_store import SecretServiceTokenStore, TokenStore, TokenStoreEr
 
 log = logging.getLogger(__name__)
 
+MEMORY_ONLY = (
+    "Until a keyring is available, Repokase keeps your token in memory for this session only (never on disk), "
+    "so you'll need to sign in again next time."
+)
+
 
 class AuthController(QObject):
     changed = Signal()
@@ -46,6 +51,8 @@ class AuthController(QObject):
         self._keyring = ThreadPoolExecutor(max_workers=1, thread_name_prefix="keyring")
         self._http = http or httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0))
         self._token: TokenSet | None = None
+        # Whether the current token is in the keyring (else memory only).
+        self._saved = False
         self._state = "starting"
         self._error = ""
         self._notice = ""
@@ -132,10 +139,12 @@ class AuthController(QObject):
     async def _persist(self, token: TokenSet) -> None:
         try:
             await self._store_call(self._store.save, token)
+            self._saved = True
             self._notice = ""
         except TokenStoreError as exc:
             log.warning("Token not persisted: %s", exc)
-            self._notice = f"{exc} You will need to sign in again next time."
+            self._saved = False
+            self._notice = f"{exc} {MEMORY_ONLY}"
         self.changed.emit()
 
     # ------------------------------------------------------------ startup
@@ -147,12 +156,13 @@ class AuthController(QObject):
         try:
             token = await self._store_call(self._store.load)
         except TokenStoreError as exc:
-            self._set(state="signedOut", notice=str(exc))
+            self._set(state="signedOut", notice=f"{exc} You can still sign in. {MEMORY_ONLY}")
             return
         if token is None:
             self._set(state="signedOut")
             return
         self._token = token
+        self._saved = True
         await self._load_viewer(restoring=True)
 
     async def _load_viewer(self, restoring: bool = False) -> None:
@@ -175,7 +185,8 @@ class AuthController(QObject):
             return
         if self._accounts:
             self._accounts.save(viewer)
-        self._set(viewer=viewer, state="signedIn", error="", notice="")
+        # Keep saying the token isn't saved until it is.
+        self._set(viewer=viewer, state="signedIn", error="", notice="" if self._saved else self._notice)
         self.signedIn.emit()
 
     async def expire_session(self) -> None:
@@ -323,6 +334,7 @@ class AuthController(QObject):
     # ------------------------------------------------------------ sign out
     async def _forget(self) -> None:
         self._token = None
+        self._saved = False
         self._viewer = {}
         try:
             await self._store_call(self._store.clear)
@@ -349,6 +361,10 @@ class AuthController(QObject):
     state = Property(str, lambda self: self._state, notify=changed)
     error = Property(str, lambda self: self._error, notify=changed)
     notice = Property(str, lambda self: self._notice, notify=changed)
+    # "keyring", "memory" (no keyring: this session only) or "none".
+    tokenStorage = Property(
+        str, lambda self: "none" if self._token is None else "keyring" if self._saved else "memory", notify=changed
+    )
     userCode = Property(str, lambda self: self._user_code, notify=changed)
     verificationUri = Property(str, lambda self: self._verification_uri, notify=changed)
     expiresAt = Property(float, lambda self: self._expires_at * 1000, notify=changed)  # ms, for QML Date

@@ -1,3 +1,4 @@
+import os
 import sqlite3
 
 import pytest
@@ -190,3 +191,96 @@ def test_workflow_runs_replace_and_sync(conn):
     store.replace_workflow_runs(conn, aid, "A", [run])
     store.replace_repos(conn, aid, [])
     assert conn.execute("SELECT COUNT(*) FROM workflow_run").fetchone()[0] == 0
+
+
+# ------------------------------------------------- damaged / unwritable cache
+def _seeded(path):
+    c = db.connect(path)
+    store.save_account(c, VIEWER)
+    c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    c.close()
+
+
+def test_open_cache_keeps_a_healthy_cache(tmp_path):
+    path = tmp_path / "repokase.db"
+    _seeded(path)
+    c, notice = db.open_cache(path)
+    assert notice == ""
+    assert c.execute("SELECT COUNT(*) FROM account").fetchone()[0] == 1
+    assert not list(tmp_path.glob("*.broken-*"))
+    c.close()
+
+
+def test_open_cache_creates_a_missing_cache(tmp_path):
+    c, notice = db.open_cache(tmp_path / "new" / "repokase.db")
+    assert notice == ""
+    assert db.schema_version(c) == 2
+    c.close()
+
+
+@pytest.mark.parametrize("damage", ["garbage", "truncated", "bad_page"])
+def test_open_cache_moves_a_damaged_cache_aside_and_rebuilds(tmp_path, damage):
+    path = tmp_path / "repokase.db"
+    if damage == "garbage":
+        path.write_bytes(b"garbage")
+    else:
+        c = db.connect(path)
+        c.execute("CREATE TABLE pad(x)")
+        c.executemany("INSERT INTO pad VALUES (?)", [("x" * 500,)] * 300)
+        c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        c.close()
+        if damage == "truncated":
+            with open(path, "r+b") as f:
+                f.truncate(4096)
+        else:
+            with open(path, "r+b") as f:
+                f.seek(8192)
+                f.write(b"\xff" * 4096)
+    original = path.read_bytes()
+
+    c, notice = db.open_cache(path)
+
+    assert db.schema_version(c) == 2
+    (broken,) = tmp_path.glob("repokase.db.broken-*")
+    assert broken.read_bytes() == original  # kept, not deleted
+    assert str(broken) in notice and "damaged" in notice
+    c.close()
+
+
+def test_open_cache_never_overwrites_an_earlier_broken_file(tmp_path):
+    path = tmp_path / "repokase.db"
+    for _ in range(2):
+        path.write_bytes(b"garbage")
+        c, _ = db.open_cache(path)
+        c.close()
+        path.unlink()
+    assert len(list(tmp_path.glob("repokase.db.broken-*"))) == 2
+
+
+needs_permissions = pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
+
+
+@needs_permissions
+@pytest.mark.parametrize("setup", ["readonly_dir", "readonly_file", "cannot_mkdir", "damaged_in_readonly_dir"])
+def test_open_cache_reports_an_unwritable_cache(tmp_path, setup):
+    folder = tmp_path / "repokase"
+    folder.mkdir()
+    path = folder / "repokase.db"
+    if setup == "readonly_file":
+        _seeded(path)
+        path.chmod(0o400)
+    elif setup == "cannot_mkdir":
+        path = folder / "sub" / "repokase.db"
+    elif setup == "damaged_in_readonly_dir":
+        path.write_bytes(b"garbage")
+    folder.chmod(0o500)
+    try:
+        with pytest.raises(db.CacheUnavailable) as err:
+            db.open_cache(path)
+    finally:
+        folder.chmod(0o700)
+    message = str(err.value)
+    assert str(path) in message and "can't write" in message
+    assert "Traceback" not in message
+    if setup == "damaged_in_readonly_dir":
+        assert path.read_bytes() == b"garbage"  # left exactly where it was

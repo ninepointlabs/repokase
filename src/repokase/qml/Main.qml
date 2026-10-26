@@ -26,9 +26,10 @@ Window {
         id: page
         anchors.fill: parent
         focus: true
-        sourceComponent: Auth.state === "signedIn" ? home : login
+        sourceComponent: App.cacheError.length ? cacheError : Auth.state === "signedIn" ? home : login
     }
 
+    Component { id: cacheError; CacheErrorView {} }
     Component { id: login; LoginView {} }
     Component { id: home; HomeView { onAboutRequested: about.open() } }
 

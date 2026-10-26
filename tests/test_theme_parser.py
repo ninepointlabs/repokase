@@ -88,7 +88,7 @@ def test_light_theme_without_shell_toml_or_orange():
 def test_missing_directory_uses_fallback():
     t = resolve(Path("/nonexistent/theme"))
     assert t.source == "fallback"
-    assert t.name == "fallback"
+    assert t.name == "tokyo-night"
     assert t.colors["bg"].hex() == "#1a1b26"
 
 
@@ -100,6 +100,7 @@ def test_fallback_follows_a_light_desktop():
     t = resolve(Path("/nonexistent/theme"), prefer_light=True)
     assert t.source == "fallback"
     assert not t.is_dark
+    assert t.name == "catppuccin-latte"
     assert t.colors["bg"].hex() == "#eff1f5"
     assert t.colors["fgMuted"].contrast(t.colors["bg"]) >= 3.0
 

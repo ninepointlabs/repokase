@@ -82,6 +82,7 @@ FocusScope {
                 }
                 RkNotice { Layout.fillWidth: true; kind: "danger"; text: Auth.error }
                 RkNotice { Layout.fillWidth: true; kind: "warning"; text: Auth.notice }
+                RkNotice { Layout.fillWidth: true; kind: "warning"; text: App.cacheNotice }
                 RkButton {
                     id: signInButton
                     Layout.fillWidth: true

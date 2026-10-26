@@ -226,6 +226,8 @@ def render(scene: str, db_path: Path, out: Path) -> None:
         icon = Property(str, lambda s: str(ROOT / "src" / "repokase" / "assets" / "repokase.svg"), constant=True)
         licenseText = Property(str, lambda s: repokase.LICENSE_NAME, constant=True)
         details = Property(str, lambda s: "", constant=True)
+        cacheNotice = Property(str, lambda s: "", constant=True)
+        cacheError = Property(str, lambda s: "", constant=True)
 
     def refuse(request):
         raise httpx.ConnectError("screenshots run offline", request=request)

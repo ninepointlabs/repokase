@@ -65,6 +65,7 @@ FocusScope {
         }
 
         RkNotice { Layout.fillWidth: true; Layout.margins: Theme.spaceLg; kind: "warning"; text: Auth.notice }
+        RkNotice { Layout.fillWidth: true; Layout.margins: Theme.spaceLg; kind: "warning"; text: App.cacheNotice }
 
         RowLayout {
             Layout.fillWidth: true
@@ -74,7 +75,8 @@ FocusScope {
             Sidebar {
                 id: sidebar
                 Layout.fillHeight: true
-                Layout.preferredWidth: 22 * Theme.fontBody * 0.62 + 2 * Theme.rowPaddingX
+                Layout.preferredWidth: implicitWidth
+                Layout.minimumWidth: implicitWidth
                 visible: root.showSidebar && !(root.singlePane && root.detailOpen)
                 dialogs: dialogs
             }
@@ -108,24 +110,32 @@ FocusScope {
     //   >= 1180px  sidebar | list | details
     //   >=  900px  list | details
     //    <  900px  list, or details full-width (Enter / double-click; Esc back)
-    // Ctrl+B / Ctrl+I override the automatic choice.
+    // Ctrl+B / Ctrl+I override the automatic choice; toggling back to what
+    // the automatic choice would show returns to automatic.
     property var sidebarPref: undefined
     property var detailPref: undefined
     property bool detailOpen: false
     readonly property bool singlePane: width < 900 || detailPref === false
-    readonly property bool showSidebar: sidebarPref === undefined ? width >= 1180 : sidebarPref
+    readonly property bool autoSidebar: width >= 1180
+    // Crossing the breakpoint (e.g. tiling to half a screen) hands the
+    // sidebar back to the automatic choice.
+    onAutoSidebarChanged: sidebarPref = undefined
+    readonly property bool showSidebar: sidebarPref === undefined ? autoSidebar : sidebarPref
     readonly property bool detailBeside: !singlePane
 
     function showDetailPane() {
         if (singlePane) detailOpen = true
         detailPane.focusFirst()
     }
+    function setSidebar(shown) {
+        sidebarPref = shown === autoSidebar ? undefined : shown
+    }
     function backToList() {
         detailOpen = false
         listView.focusList()
     }
 
-    Shortcut { sequence: "Ctrl+B"; onActivated: root.sidebarPref = !root.showSidebar }
+    Shortcut { sequence: "Ctrl+B"; onActivated: root.setSidebar(!root.showSidebar) }
     Shortcut {
         sequence: "Ctrl+I"
         onActivated: {
@@ -133,7 +143,7 @@ FocusScope {
             else root.detailPref = root.detailPref === false ? undefined : false
         }
     }
-    Shortcut { sequence: "Ctrl+1"; onActivated: { root.sidebarPref = true; root.detailOpen = false; sidebar.focusList() } }
+    Shortcut { sequence: "Ctrl+1"; onActivated: { root.setSidebar(true); root.detailOpen = false; sidebar.focusList() } }
     Shortcut { sequence: "Ctrl+2"; onActivated: root.backToList() }
     Shortcut { sequence: "o"; enabled: root.detailOpen && Detail.hasRepo; onActivated: Repos.openUrl(Detail.link("repo")) }
 

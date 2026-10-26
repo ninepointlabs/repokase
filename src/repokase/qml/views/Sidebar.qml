@@ -13,6 +13,10 @@ Rectangle {
     property var dialogs
 
     color: Theme.bgSunken
+    // About 22 characters, but never narrower than the widest fixed control,
+    // or the column overflows and clips the counts.
+    implicitWidth: Math.ceil(Math.max(22 * Theme.fontBody * 0.62 + 2 * Theme.rowPaddingX,
+                            missingOrg.implicitWidth + missingOrg.Layout.leftMargin + Theme.rowPaddingX + Theme.borderWidth))
 
     readonly property var entries: [
         { id: -1, name: "All repositories", count: Repos.total, fixed: true },
@@ -288,6 +292,7 @@ Rectangle {
         }
         // Organizations that restrict third-party apps are invisible until approved.
         RkButton {
+            id: missingOrg
             Layout.leftMargin: Theme.rowPaddingX - Theme.spaceSm
             Layout.topMargin: Theme.spaceSm
             variant: "ghost"
