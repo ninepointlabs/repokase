@@ -134,8 +134,9 @@ RkDialog {
                 RkText {
                     Layout.fillWidth: true
                     text: "No telemetry, and no Nine Point Labs account or server. Repokase talks only to GitHub "
-                        + "(github.com, api.github.com and your avatar image), with the token you approved; that "
-                        + "token stays in your system keyring. Your repository list, categories and traffic history "
+                        + "(github.com, api.github.com and your avatar image), with the token you approved. That "
+                        + "token is kept in your system keyring, or in memory for the session when there is no "
+                        + "keyring, and never in a file. Your repository list, categories and traffic history "
                         + "are kept in a local database in your data folder."
                     role: "small"
                     wrapMode: Text.WordWrap
@@ -157,7 +158,9 @@ RkDialog {
                 RkText { text: "Theme"; role: "small"; muted: true }
                 RkText { Layout.fillWidth: true; text: Theme.name + (Theme.source === "fallback" ? " (built-in fallback)" : " (follows Omarchy)") + " · " + Theme.fontFamily; role: "small" }
                 RkText { text: "Data"; role: "small"; muted: true }
-                RkText { Layout.fillWidth: true; text: App.dataDir + " · token in your keyring"; role: "small"; elide: Text.ElideMiddle }
+                RkText { Layout.fillWidth: true; text: App.dataDir + (Auth.tokenStorage === "keyring" ? " · token in your keyring"
+                    : Auth.tokenStorage === "memory" ? " · token in memory for this session only"
+                    : " · no token (not signed in)"); role: "small"; elide: Text.ElideMiddle }
             }
 
             Rectangle { Layout.fillWidth: true; height: Theme.borderWidth; color: Theme.border }

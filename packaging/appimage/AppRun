@@ -32,6 +32,24 @@ icon_files=(
 # Written into the installed desktop file so --remove-desktop-entry never
 # deletes one that came from somewhere else (e.g. the Arch package).
 marker="X-Repokase-Installed-By=AppImage"
+# Also written there: the icons this install put in place, so removing deletes
+# exactly those and never an icon that was already there.
+icons_key="X-Repokase-Icons"
+
+# True if the desktop file exists and was written by --install-desktop-entry.
+ours_desktop_file() {
+    [ -f "$desktop_file" ] && grep -qx "$marker" "$desktop_file"
+}
+
+# The icons our desktop file says we installed, one per line. Entries from
+# before the list was recorded (0.2.5) installed all of them.
+installed_icons() {
+    ours_desktop_file || return 0
+    local line
+    line="$(grep -m1 "^$icons_key=" "$desktop_file")" || { printf '%s\n' "${icon_files[@]}"; return 0; }
+    line="${line#"$icons_key="}"
+    tr ';' '\n' <<<"$line" | grep -v '^$' || true
+}
 
 refresh_caches() {
     if command -v update-desktop-database >/dev/null 2>&1; then
@@ -62,9 +80,26 @@ install_desktop_entry() {
         echo "not an extracted copy. Nothing was changed." >&2
         return 1
     fi
+    if [ -f "$desktop_file" ] && ! ours_desktop_file; then
+        echo "Repokase: $desktop_file already exists and was not created by --install-desktop-entry." >&2
+        echo "Move it away first if you want this one instead. Nothing was changed." >&2
+        return 1
+    fi
     local exec_path try_path
     exec_path="$(exec_quote "$APPIMAGE")"
     try_path="${APPIMAGE//\\/\\\\}"
+
+    # Icons already there that an earlier install of ours didn't put there
+    # belong to someone else: leave them.
+    local rel previous=() icons=() skipped=()
+    mapfile -t previous < <(installed_icons)
+    for rel in "${icon_files[@]}"; do
+        if [ -e "$icons_dir/$rel" ] && ! printf '%s\n' "${previous[@]}" | grep -Fqx "$rel"; then
+            skipped+=("$rel")
+        else
+            icons+=("$rel")
+        fi
+    done
 
     mkdir -p "$apps_dir" || return 1
     # The bundled file has a single [Desktop Entry] group, so the marker can
@@ -81,13 +116,18 @@ install_desktop_entry() {
             esac
         done < "$APPDIR/$APP_ID.desktop"
         printf '%s\n' "$marker"
+        printf '%s=' "$icons_key"
+        [ ${#icons[@]} -gt 0 ] && printf '%s;' "${icons[@]}"
+        printf '\n'
     } > "$desktop_file.tmp" && mv -f "$desktop_file.tmp" "$desktop_file" || return 1
     echo "Installed $desktop_file"
 
-    local rel
-    for rel in "${icon_files[@]}"; do
+    for rel in "${icons[@]}"; do
         install -D -m644 "$APPDIR/usr/share/icons/hicolor/$rel" "$icons_dir/$rel" || return 1
         echo "Installed $icons_dir/$rel"
+    done
+    for rel in "${skipped[@]}"; do
+        echo "Left $icons_dir/$rel alone: it was already there."
     done
     refresh_caches
     echo "Repokase is now in your app menu. It starts $APPIMAGE, so keep the file where it is"
@@ -95,19 +135,23 @@ install_desktop_entry() {
 }
 
 remove_desktop_entry() {
-    if [ -f "$desktop_file" ]; then
-        if grep -qx "$marker" "$desktop_file"; then
-            rm -f "$desktop_file" && echo "Removed $desktop_file"
-        else
+    if ! ours_desktop_file; then
+        if [ -f "$desktop_file" ]; then
             echo "Left $desktop_file alone: it was not created by --install-desktop-entry."
         fi
+        echo "No desktop entry from --install-desktop-entry found. Nothing was removed."
+        return 0
     fi
-    local rel
-    for rel in "${icon_files[@]}"; do
+    local rel icons=()
+    mapfile -t icons < <(installed_icons)
+    for rel in "${icons[@]}"; do
+        # Only names from our own list, never a path from the file.
+        printf '%s\n' "${icon_files[@]}" | grep -Fqx "$rel" || continue
         if [ -f "$icons_dir/$rel" ]; then
             rm -f "$icons_dir/$rel" && echo "Removed $icons_dir/$rel"
         fi
     done
+    rm -f "$desktop_file" && echo "Removed $desktop_file"
     refresh_caches
     echo "Done."
 }

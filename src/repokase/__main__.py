@@ -42,7 +42,10 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     )
     # Packaging check (AppImage CI): start the full UI, report, quit.
     parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.if_due and not args.snapshot_traffic:
+        parser.error("--if-due only works with --snapshot-traffic")
+    return args
 
 
 async def _shutdown(auth) -> None:
@@ -104,6 +107,16 @@ def main(argv: list[str] | None = None) -> int:
     loop = qasync.QEventLoop(app)
     asyncio.set_event_loop(loop)
 
+    cache_notice = cache_error = ""
+    try:
+        conn, cache_notice = db.open_cache(config.data_dir() / "repokase.db")
+    except db.CacheUnavailable as exc:
+        # Still open the window (started from the app menu, stderr goes
+        # nowhere), but only to say what's wrong.
+        print(f"repokase: {exc}", file=sys.stderr)
+        cache_error = str(exc)
+        conn = db.connect(":memory:")
+
     class AppInfo(QObject):
         name = Property(str, lambda self: APP_NAME, constant=True)
         tagline = Property(str, lambda self: TAGLINE, constant=True)
@@ -120,6 +133,9 @@ def main(argv: list[str] | None = None) -> int:
         pysideVersion = Property(str, lambda self: PySide6.__version__, constant=True)
         pythonVersion = Property(str, lambda self: sys.version.split()[0], constant=True)
         icon = Property(QUrl, lambda self: QUrl.fromLocalFile(str(HERE / "assets" / "repokase.svg")), constant=True)
+        # The cache was rebuilt (notice) or can't be used at all (error).
+        cacheNotice = Property(str, lambda self: cache_notice, constant=True)
+        cacheError = Property(str, lambda self: cache_error, constant=True)
 
         @Property(str, constant=True)
         def licenseText(self) -> str:
@@ -145,7 +161,6 @@ def main(argv: list[str] | None = None) -> int:
 
     info = AppInfo()
     theme = Theme()
-    conn = db.connect(config.data_dir() / "repokase.db")
     auth = AuthController(accounts=AccountCache(conn))
     repos = RepoController(auth, conn)
     detail = DetailController(auth, repos)
@@ -207,7 +222,8 @@ def main(argv: list[str] | None = None) -> int:
 
         QTimer.singleShot(int(os.environ.get("REPOKASE_SCREENSHOT_DELAY", "1500")), grab)
 
-    loop.call_soon(auth.restore)
+    if not cache_error:
+        loop.call_soon(auth.restore)
     with loop:
         # QGuiApplication.quit() stops the qasync loop and run_forever returns.
         loop.run_forever()

@@ -175,9 +175,11 @@ def resolve(theme_dir: Path | None, prefer_light: bool = False) -> ThemeData:
         except OSError:
             name = theme_dir.name
     source = "omarchy" if colors_raw else "fallback"
+    light = prefer_light and not colors_raw
     if not colors_raw:
-        name = "fallback"
-    fallback = FALLBACK_LIGHT_COLORS if prefer_light and not colors_raw else FALLBACK_COLORS
+        # Name the built-in palette, the way Omarchy names its themes.
+        name = "catppuccin-latte" if light else "tokyo-night"
+    fallback = FALLBACK_LIGHT_COLORS if light else FALLBACK_COLORS
 
     def pick(key: str) -> Rgba:
         return _pick(colors_raw, key, fallback)

@@ -80,7 +80,8 @@ Everything Repokase needs is inside the file. To add it to your app menu and doc
   for you, with the right icon, and can update it in place when a new release is out.
 - Or let the AppImage do it: `./repokase-*-x86_64.AppImage --install-desktop-entry`
   adds a menu entry and icons under `~/.local/share` that start the AppImage where it
-  is now. `--remove-desktop-entry` removes exactly those files again. Run
+  is now. `--remove-desktop-entry` removes exactly those files again; a menu entry or
+  icons that were already there are left alone. Run
   `--install-desktop-entry` again if you move the file.
 
 If it doesn't start and the message mentions FUSE, install your distribution's FUSE
@@ -126,7 +127,9 @@ Where your data goes:
   session only.
 - **The cache** (repositories, workflow runs, your categories, UI settings) is a SQLite
   database at `~/.local/share/repokase/repokase.db`. Delete it at any time; Repokase
-  rebuilds it on the next refresh.
+  rebuilds it on the next refresh. If the file is damaged, Repokase moves it aside as
+  `repokase.db.broken-<date>`, starts a fresh one and tells you. Your categories and
+  traffic history are only in this database, so they don't come back.
 - **Nothing is sent anywhere except `github.com` / `api.github.com`.**
 
 ### Organizations
@@ -235,20 +238,26 @@ license, Nine Point Labs, the support address
 |---|---|
 | `/` `Ctrl+F` | Search (name, description, topics, language; every word must match) |
 | `j` `k` / arrows | Move through the list |
-| `Enter` / double-click | Details (full-width in narrow windows; `Esc` goes back) |
+| `g` `G` / `Home` `End` | First / last repository |
+| `Enter` `l` `→` / double-click | Details (full-width in narrow windows; `Esc` goes back) |
 | `o` | Open on GitHub |
 | `c` | Copy URL |
 | `1`–`9` | Toggle the selected repo's category |
 | `e`, `Shift+A`, `Shift+V`, `Shift+T`, `Delete` | Edit description, archive, visibility, transfer, delete |
-| `x` / Space, `Shift+↓↑`, `Ctrl+A` | Mark for bulk actions (Esc clears) |
-| `Ctrl+R` | Refresh from GitHub |
+| `x` / `Space`, `Shift+↓↑`, `Ctrl+A` | Mark for bulk actions |
+| `Esc` | Clear marks or search, or go back from details |
+| `Ctrl+R` `F5` | Refresh from GitHub |
 | `Ctrl+1` / `Ctrl+2` | Focus categories / list |
 | `Ctrl+B` / `Ctrl+I` | Toggle the categories and details panes |
+| `n`, `F2`, `Delete` in categories | New, rename, remove a category |
+| `Alt+↑↓` in categories | Reorder categories |
 | `F1` / `?` | About Repokase and all shortcuts |
+| `Ctrl+Q` | Quit |
 
 The layout adapts to the window width. At half-screen tile widths it shows the list and
 opens details full-width. From 900px it shows the list and details side by side, and
-from 1180px it adds the categories sidebar.
+from 1180px it adds the categories sidebar. `Ctrl+B` (and `Ctrl+1`, which shows it)
+override that at any width until the window next crosses 1180px.
 
 <p align="center"><img src="docs/screenshots/narrow.png" width="420" alt="Details opened full-width in a narrow, half-screen window"></p>
 
@@ -298,6 +307,11 @@ for your version.
 
 - **"No Secret Service is available"**: install and start a keyring provider
   (`gnome-keyring`, or KWallet on KDE). Repokase won't store your token anywhere else.
+  You can still sign in: the token is then kept in memory for that session only, and
+  you sign in again next time.
+- **"Repokase can't write its cache"**: Repokase shows this instead of your repositories
+  when it can't create or write `~/.local/share/repokase/`. Fix the folder's owner or
+  permissions and start it again.
 - **The AppImage won't start**: see the FUSE note under
   [Other Linux distributions](#other-linux-distributions-appimage). Run it from a
   terminal to see why; `--debug` adds verbose logs.

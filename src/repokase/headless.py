@@ -53,7 +53,13 @@ async def _run(if_due: bool) -> int:
             return state["token"].access_token
 
         client = GitHubClient(http, access_token)
-        conn = db.connect(config.data_dir() / "repokase.db")
+        try:
+            conn, notice = db.open_cache(config.data_dir() / "repokase.db")
+        except db.CacheUnavailable as exc:
+            print(f"repokase: {exc}", file=sys.stderr)
+            return 1
+        if notice:
+            print(f"repokase: {notice}", file=sys.stderr)
         try:
             viewer = await fetch_viewer(client)
             account_id = store.save_account(conn, viewer)
