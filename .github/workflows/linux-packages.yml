@@ -1,0 +1,239 @@
+# Builds the Repokase .deb, .rpm and Flatpak bundle and attaches them to
+# releases, next to the AppImage (appimage.yml) and the Arch package (built
+# outside CI). All three package the AppDir from packaging/appimage/build.sh,
+# the same Python and Qt tree the AppImage ships.
+#
+# - Pull requests that touch the app or its packaging: build + install checks.
+# - A published release: build from the release tag and attach
+#   repokase_<version>-1_amd64.deb, repokase-<version>-1.x86_64.rpm and
+#   repokase-<version>-x86_64.flatpak, each with a .sha256.
+# - Run workflow (workflow_dispatch) with a tag: build that tag's source with
+#   the packaging on the chosen branch, and attach to the existing release.
+name: Linux packages
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - "packaging/**"
+      - ".github/workflows/linux-packages.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and attach the packages to, e.g. v0.2.6"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-packages-${{ github.event.release.tag_name || inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out packaging
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check out the tag's source
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          path: app-src
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update -qq
+          grep -v '^#' packaging/appimage/build-deps.txt | xargs sudo apt-get install -y -qq --no-install-recommends
+
+      # The AppImage itself is built and released by appimage.yml; here only
+      # its AppDir is used.
+      - name: Build the AppDir
+        run: |
+          if [ -d app-src ]; then
+            packaging/appimage/build.sh --app-src app-src
+          else
+            packaging/appimage/build.sh
+          fi
+
+      - name: Version
+        id: version
+        run: |
+          version="$(sed -n 's/^X-AppImage-Version=//p' build/appimage/AppDir/repokase.desktop)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ -n "$TAG" ] && [ "v$version" != "$TAG" ]; then
+            echo "::error::Built version $version does not match tag $TAG"
+            exit 1
+          fi
+
+      - name: Build .deb and .rpm
+        run: packaging/linux/build-packages.sh
+
+      - name: Package the AppDir for the Flatpak job
+        # upload-artifact drops permissions and symlinks, so tar it.
+        run: tar -C build/appimage -cf appdir.tar AppDir
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: deb-rpm
+          path: dist-packages/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: appdir
+          path: appdir.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  flatpak:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: appdir
+
+      - name: Install flatpak-builder and the runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends flatpak dbus-user-session
+          # Ubuntu 24.04 keeps unprivileged user namespaces from bubblewrap.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          # System-wide, so org.flatpak.Builder sees them from its sandbox.
+          sudo flatpak install --system -y --noninteractive flathub \
+            org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder
+          # Ubuntu's flatpak-builder runs the host's appstream-compose 1.0.2,
+          # whose compose fails on this app (file-read-error); Flathub's
+          # org.flatpak.Builder brings a current appstream.
+          flatpak info --user org.flatpak.Builder | grep -E '^ *(Version|Commit):'
+
+      - name: Build the bundle
+        run: |
+          mkdir -p build/appimage
+          tar -C build/appimage -xf appdir.tar
+          # The sandboxed builder reaches the host's flatpak over the session bus.
+          dbus-run-session -- env FLATPAK_BUILDER="flatpak run org.flatpak.Builder" \
+            packaging/flatpak/build-flatpak.sh
+
+      - name: Install check
+        run: |
+          flatpak install --user -y --noninteractive --bundle dist-packages/repokase-*-x86_64.flatpak
+          flatpak info --user com.ninepointlabs.repokase
+          version="$(basename dist-packages/repokase-*-x86_64.flatpak | sed 's/^repokase-\(.*\)-x86_64\.flatpak$/\1/')"
+          dbus-run-session -- packaging/linux/install-check.sh "$version" flatpak run com.ninepointlabs.repokase
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: flatpak
+          path: dist-packages/
+          if-no-files-found: error
+
+  install-check:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ubuntu:22.04
+            kind: deb
+          - image: ubuntu:24.04
+            kind: deb
+          - image: debian:12
+            kind: deb
+          - image: fedora:43
+            kind: rpm
+    name: install-check (${{ matrix.image }})
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: deb-rpm
+          path: dist-packages
+
+      - name: Checksums
+        run: cd dist-packages && sha256sum -c *.sha256
+
+      - name: Install with apt
+        if: matrix.kind == 'deb'
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "./dist-packages/repokase_${VERSION}-1_amd64.deb"
+          dpkg -s repokase | grep -E '^(Status|Version|Depends):'
+
+      - name: Install with dnf
+        if: matrix.kind == 'rpm'
+        run: |
+          dnf install -y -q "./dist-packages/repokase-${VERSION}-1.x86_64.rpm"
+          rpm -q repokase
+          rpm -V repokase
+
+      - name: Installed files
+        run: |
+          for f in /usr/bin/repokase /usr/share/applications/repokase.desktop \
+                   /usr/share/icons/hicolor/scalable/apps/repokase.svg \
+                   /usr/share/metainfo/com.ninepointlabs.repokase.metainfo.xml \
+                   /usr/lib/systemd/user/repokase-traffic.timer; do
+            test -e "$f" && echo "ok $f" || { echo "missing $f"; exit 1; }
+          done
+
+      - name: Start check
+        run: packaging/linux/install-check.sh "$VERSION" repokase
+
+  attach:
+    needs: [build, flatpak, install-check]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: deb-rpm
+          path: dist-packages
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: flatpak
+          path: dist-packages
+
+      # Only these six files are uploaded (--clobber replaces an earlier
+      # upload of the same name); nothing is ever deleted.
+      - name: Attach to the release
+        run: |
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > before.txt
+          echo "Assets before:"; sed 's/^/  /' before.txt
+          gh release upload "$TAG" --clobber \
+            dist-packages/repokase_*_amd64.deb dist-packages/repokase_*_amd64.deb.sha256 \
+            dist-packages/repokase-*.x86_64.rpm dist-packages/repokase-*.x86_64.rpm.sha256 \
+            dist-packages/repokase-*-x86_64.flatpak dist-packages/repokase-*-x86_64.flatpak.sha256
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > after.txt
+          echo "Assets after:"; sed 's/^/  /' after.txt
+          missing="$(comm -23 before.txt after.txt)"
+          if [ -n "$missing" ]; then
+            echo "::error::Assets disappeared: $missing"
+            exit 1
+          fi

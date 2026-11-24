@@ -8,3 +8,4 @@ pkg/
 src/*.tar.*
 *.log
 dist-appimage/
+dist-packages/
