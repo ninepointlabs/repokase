@@ -1,6 +1,6 @@
 # Maintainer: Nine Point Labs <tim@ninepointlabs.com>
 pkgname=repokase
-pkgver=0.2.5
+pkgver=0.2.6
 pkgrel=1
 pkgdesc="Your repos, chef's choice. A native Omarchy app for managing GitHub repositories"
 arch=('any')

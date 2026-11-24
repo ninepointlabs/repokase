@@ -30,7 +30,7 @@ Each [GitHub release](https://github.com/ninepointlabs/repokase/releases) includ
 ready-built Arch package:
 
 ```sh
-sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.5/repokase-0.2.5-1-any.pkg.tar.zst
+sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.6/repokase-0.2.6-1-any.pkg.tar.zst
 ```
 
 pacman installs the dependencies from the official repos. To update, install the next
