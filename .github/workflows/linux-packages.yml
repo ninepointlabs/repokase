@@ -109,30 +109,22 @@ jobs:
       - name: Install flatpak-builder and the runtime
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends flatpak flatpak-builder dbus-user-session
+          sudo apt-get install -y -qq --no-install-recommends flatpak dbus-user-session
           # Ubuntu 24.04 keeps unprivileged user namespaces from bubblewrap.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user -y --noninteractive flathub \
-            org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
+            org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 org.flatpak.Builder
+          # Ubuntu's flatpak-builder runs the host's appstream-compose 1.0.2,
+          # whose compose fails on this app (file-read-error); Flathub's
+          # org.flatpak.Builder brings a current appstream.
+          flatpak info --user org.flatpak.Builder | grep -E '^ *(Version|Commit):'
 
       - name: Build the bundle
         run: |
           mkdir -p build/appimage
           tar -C build/appimage -xf appdir.tar
-          packaging/flatpak/build-flatpak.sh
-
-      - name: AppStream compose details
-        if: failure()
-        run: |
-          files=build/flatpak/build/files
-          flatpak run --command=appstreamcli --filesystem="$PWD" --cwd="$PWD" org.freedesktop.Sdk//25.08 --version || true
-          flatpak run --command=appstreamcli --filesystem="$PWD" --cwd="$PWD" org.freedesktop.Sdk//25.08 \
-            compose --verbose --prefix=/ --origin=diag --result-root="$files" \
-            --data-dir="$PWD/diag/xml" --icons-dir="$PWD/diag/icons" --hints-dir="$PWD/diag/hints" \
-            --components=com.ninepointlabs.repokase,com.ninepointlabs.repokase.desktop "$files" 2>&1 | tail -60 || true
-          find diag -type f -print -exec sh -c 'zcat -f "$1" | head -80' _ {} \; || true
-          ls -laR "$files/share" | head -60
+          FLATPAK_BUILDER="flatpak run org.flatpak.Builder" packaging/flatpak/build-flatpak.sh
 
       - name: Install check
         run: |

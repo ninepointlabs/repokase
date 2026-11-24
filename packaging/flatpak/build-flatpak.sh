@@ -3,6 +3,8 @@
 # bundle, from the AppDir that packaging/appimage/build.sh leaves in
 # build/appimage/AppDir. Needs flatpak, flatpak-builder and the
 # org.freedesktop.Platform/Sdk 25.08 from Flathub (CI installs them).
+# FLATPAK_BUILDER picks the builder command, e.g.
+# FLATPAK_BUILDER="flatpak run org.flatpak.Builder" (what CI uses).
 #
 #   build-flatpak.sh [--appdir DIR] [--out DIR]
 set -euo pipefail
@@ -31,7 +33,8 @@ mkdir -p "$WORK/src"
 cp "$HERE/$APP_FQID.yml" "$WORK/src/"
 cp -a "$APPDIR" "$WORK/src/appdir"
 
-flatpak-builder --user --force-clean --disable-rofiles-fuse \
+# shellcheck disable=SC2086  # FLATPAK_BUILDER may be a command with arguments.
+${FLATPAK_BUILDER:-flatpak-builder} --user --force-clean --disable-rofiles-fuse \
     --state-dir="$WORK/state" --repo="$WORK/repo" \
     --default-branch=stable --subject="Repokase $version" \
     "$WORK/build" "$WORK/src/$APP_FQID.yml"
