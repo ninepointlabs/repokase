@@ -35,6 +35,7 @@ cp -a "$APPDIR" "$WORK/src/appdir"
 
 # shellcheck disable=SC2086  # FLATPAK_BUILDER may be a command with arguments.
 ${FLATPAK_BUILDER:-flatpak-builder} --user --force-clean --disable-rofiles-fuse \
+    --install-deps-from=flathub \
     --state-dir="$WORK/state" --repo="$WORK/repo" \
     --default-branch=stable --subject="Repokase $version" \
     "$WORK/build" "$WORK/src/$APP_FQID.yml"

@@ -113,8 +113,11 @@ jobs:
           # Ubuntu 24.04 keeps unprivileged user namespaces from bubblewrap.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y --noninteractive flathub \
-            org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 org.flatpak.Builder
+          sudo flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          # System-wide, so org.flatpak.Builder sees them from its sandbox.
+          sudo flatpak install --system -y --noninteractive flathub \
+            org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder
           # Ubuntu's flatpak-builder runs the host's appstream-compose 1.0.2,
           # whose compose fails on this app (file-read-error); Flathub's
           # org.flatpak.Builder brings a current appstream.
