@@ -122,6 +122,18 @@ jobs:
           tar -C build/appimage -xf appdir.tar
           packaging/flatpak/build-flatpak.sh
 
+      - name: AppStream compose details
+        if: failure()
+        run: |
+          files=build/flatpak/build/files
+          flatpak run --command=appstreamcli --filesystem="$PWD" --cwd="$PWD" org.freedesktop.Sdk//25.08 --version || true
+          flatpak run --command=appstreamcli --filesystem="$PWD" --cwd="$PWD" org.freedesktop.Sdk//25.08 \
+            compose --verbose --prefix=/ --origin=diag --result-root="$files" \
+            --data-dir="$PWD/diag/xml" --icons-dir="$PWD/diag/icons" --hints-dir="$PWD/diag/hints" \
+            --components=com.ninepointlabs.repokase,com.ninepointlabs.repokase.desktop "$files" 2>&1 | tail -60 || true
+          find diag -type f -print -exec sh -c 'zcat -f "$1" | head -80' _ {} \; || true
+          ls -laR "$files/share" | head -60
+
       - name: Install check
         run: |
           flatpak install --user -y --noninteractive --bundle dist-packages/repokase-*-x86_64.flatpak
