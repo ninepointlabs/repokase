@@ -70,10 +70,10 @@
           no browser tabs.
         </p>
         <div class="order">
-          <code id="install-cmd">sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.5/repokase-0.2.5-1-any.pkg.tar.zst</code>
+          <code id="install-cmd">sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.6/repokase-0.2.6-1-any.pkg.tar.zst</code>
           <button type="button" class="copy" data-copy="#install-cmd">Copy</button>
         </div>
-        <p class="fine">v0.2.5 · Arch / Omarchy · MIT · <a href="https://github.com/ninepointlabs/repokase/releases">release notes</a></p>
+        <p class="fine">v0.2.6 · Arch / Omarchy · <a href="#install">.deb, .rpm, Flatpak, AppImage</a> · MIT · <a href="https://github.com/ninepointlabs/repokase/releases">release notes</a></p>
       </div>
       <figure class="window hero-shot">
         <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>repokase</span></div>
@@ -300,7 +300,7 @@
           <h3>From a release</h3>
           <p>A ready-built Arch package. pacman pulls the dependencies from the official repos.</p>
           <div class="order">
-            <code id="install-cmd-2">sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.5/repokase-0.2.5-1-any.pkg.tar.zst</code>
+            <code id="install-cmd-2">sudo pacman -U https://github.com/ninepointlabs/repokase/releases/download/v0.2.6/repokase-0.2.6-1-any.pkg.tar.zst</code>
             <button type="button" class="copy" data-copy="#install-cmd-2">Copy</button>
           </div>
         </div>
@@ -322,13 +322,31 @@ makepkg -si</code></pre>
           <h3>Other Linux (AppImage)</h3>
           <p>For other distributions with glibc 2.34 or newer: Ubuntu 22.04, Debian 12,
             Fedora 39 and newer, on x86_64. Everything it needs is inside the file.
-            Download <a href="https://github.com/ninepointlabs/repokase/releases/download/v0.2.5/repokase-0.2.5-x86_64.AppImage">repokase-0.2.5-x86_64.AppImage</a>, then:</p>
-          <pre><code>chmod +x repokase-0.2.5-x86_64.AppImage
-./repokase-0.2.5-x86_64.AppImage
+            Download <a href="https://github.com/ninepointlabs/repokase/releases/download/v0.2.6/repokase-0.2.6-x86_64.AppImage">repokase-0.2.6-x86_64.AppImage</a>, then:</p>
+          <pre><code>chmod +x repokase-0.2.6-x86_64.AppImage
+./repokase-0.2.6-x86_64.AppImage
 # add it to your app menu:
-./repokase-0.2.5-x86_64.AppImage --install-desktop-entry</code></pre>
+./repokase-0.2.6-x86_64.AppImage --install-desktop-entry</code></pre>
           <p>Or let <a href="https://flathub.org/apps/it.mijorus.gearlever">Gear Lever</a> or
             <a href="https://github.com/TheAssassin/AppImageLauncher">AppImageLauncher</a> add it and keep it updated.</p>
+        </div>
+        <div class="ticket">
+          <h3>Ubuntu / Debian (.deb)</h3>
+          <p>Ubuntu 22.04, Debian 12 and newer. Download
+            <a href="https://github.com/ninepointlabs/repokase/releases/download/v0.2.6/repokase_0.2.6-1_amd64.deb">repokase_0.2.6-1_amd64.deb</a>, then:</p>
+          <pre><code>sudo apt install ./repokase_0.2.6-1_amd64.deb</code></pre>
+        </div>
+        <div class="ticket">
+          <h3>Fedora / openSUSE (.rpm)</h3>
+          <p>Download
+            <a href="https://github.com/ninepointlabs/repokase/releases/download/v0.2.6/repokase-0.2.6-1.x86_64.rpm">repokase-0.2.6-1.x86_64.rpm</a>, then:</p>
+          <pre><code>sudo dnf install ./repokase-0.2.6-1.x86_64.rpm</code></pre>
+        </div>
+        <div class="ticket">
+          <h3>Flatpak</h3>
+          <p>A Flatpak bundle; the runtime comes from Flathub. Download
+            <a href="https://github.com/ninepointlabs/repokase/releases/download/v0.2.6/repokase-0.2.6-x86_64.flatpak">repokase-0.2.6-x86_64.flatpak</a>, then:</p>
+          <pre><code>flatpak install --user ./repokase-0.2.6-x86_64.flatpak</code></pre>
         </div>
       </div>
     </section>
