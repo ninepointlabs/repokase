@@ -1,0 +1,55 @@
+# Self-hosted Flatpak bundle (not Flathub). packaging/flatpak/build-flatpak.sh
+# copies the AppDir from packaging/appimage/build.sh next to this manifest as
+# appdir/, so the bundle runs the same Python and Qt tree that the AppImage
+# smoke test checked. Built with --share=network off: nothing is downloaded.
+app-id: com.ninepointlabs.repokase
+runtime: org.freedesktop.Platform
+runtime-version: "25.08"
+sdk: org.freedesktop.Sdk
+command: repokase
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # The GitHub token lives in the desktop keyring (Secret Service).
+  - --talk-name=org.freedesktop.secrets
+modules:
+  - name: repokase
+    buildsystem: simple
+    # Prebuilt, patchelf'd ELF files: leave them exactly as tested.
+    build-options:
+      no-debuginfo: true
+      strip: false
+    sources:
+      - type: dir
+        path: appdir
+        dest: appdir
+    build-commands:
+      - mkdir -p /app/lib/repokase/usr
+      - cp -a appdir/opt /app/lib/repokase/opt
+      - cp -a appdir/usr/lib appdir/usr/bin /app/lib/repokase/usr/
+      - |
+        install -Dm755 /dev/stdin /app/bin/repokase <<'EOF'
+        #!/bin/sh
+        exec /app/lib/repokase/opt/python3.12/bin/python3.12 -I /app/lib/repokase/usr/bin/repokase "$@"
+        EOF
+      # Exported files must be named after the app id.
+      - >-
+        sed -e 's/^Icon=repokase$/Icon=com.ninepointlabs.repokase/' appdir/usr/share/applications/repokase.desktop
+        | grep -v '^X-AppImage-' > com.ninepointlabs.repokase.desktop
+      - install -Dm644 com.ninepointlabs.repokase.desktop /app/share/applications/com.ninepointlabs.repokase.desktop
+      - |
+        for d in appdir/usr/share/icons/hicolor/*/apps; do
+          size="$(basename "$(dirname "$d")")"
+          for f in "$d"/repokase.*; do
+            install -Dm644 "$f" "/app/share/icons/hicolor/$size/apps/com.ninepointlabs.repokase.${f##*.}"
+          done
+        done
+      - >-
+        sed 's|<launchable type="desktop-id">repokase.desktop</launchable>|<launchable type="desktop-id">com.ninepointlabs.repokase.desktop</launchable>|'
+        appdir/usr/share/metainfo/com.ninepointlabs.repokase.metainfo.xml
+        > com.ninepointlabs.repokase.metainfo.xml
+      - install -Dm644 com.ninepointlabs.repokase.metainfo.xml /app/share/metainfo/com.ninepointlabs.repokase.metainfo.xml
+      - install -Dm644 appdir/usr/share/licenses/repokase/LICENSE /app/share/licenses/com.ninepointlabs.repokase/LICENSE
