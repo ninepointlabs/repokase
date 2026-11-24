@@ -127,7 +127,9 @@ jobs:
         run: |
           mkdir -p build/appimage
           tar -C build/appimage -xf appdir.tar
-          FLATPAK_BUILDER="flatpak run org.flatpak.Builder" packaging/flatpak/build-flatpak.sh
+          # The sandboxed builder reaches the host's flatpak over the session bus.
+          dbus-run-session -- env FLATPAK_BUILDER="flatpak run org.flatpak.Builder" \
+            packaging/flatpak/build-flatpak.sh
 
       - name: Install check
         run: |
